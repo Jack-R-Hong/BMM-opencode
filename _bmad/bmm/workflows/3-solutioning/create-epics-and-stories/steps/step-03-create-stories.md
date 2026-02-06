@@ -100,6 +100,8 @@ Stories must be independently completable in sequence:
 ```
 ### Story {N}.{M}: {story_title}
 
+**Depends On:** None | Story N.X, Story N.Y
+
 As a {user_type},
 I want {capability},
 So that {value_benefit}.
@@ -111,6 +113,14 @@ So that {value_benefit}.
 **Then** {expected_outcome}
 **And** {additional_criteria}
 ```
+
+**🔗 DEPENDS ON GUIDELINES:**
+
+- **Optional field** — if omitted, sprint-planning will auto-infer dependencies (sequential default: each story depends on the previous one)
+- **`None`** — explicitly marks story as having no dependencies (can start immediately, overrides auto-inference)
+- **`Story N.X, Story N.Y`** — explicitly lists stories that MUST be done before this story can start
+- Only reference stories within the SAME epic (cross-epic deps are handled by epic ordering)
+- Use explicit depends_on when stories can run in parallel (e.g., Story 1.2 and 1.3 both depend only on 1.1, not on each other)
 
 **✅ GOOD STORY EXAMPLES:**
 

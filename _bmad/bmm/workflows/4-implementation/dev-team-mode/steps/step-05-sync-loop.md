@@ -40,6 +40,8 @@ epic_progress:
 <output>
 ## 📊 Loop {{loop_count}} Complete
 
+🎯 **Goal:** {{session_goal}}
+
 ### Epic: {{selected_epic}}
 
 | Status | Count | Stories |
@@ -55,6 +57,15 @@ epic_progress:
 ```
 [{{progress_bar}}] {{completion}}%
 ```
+
+### Story Sessions
+{{#each story_sessions}}
+#### 📖 {{@key}}
+| Phase | Session |
+|-------|---------|
+{{#if dev_session_id}}| Dev | `{{dev_session_id}}` |{{/if}}
+{{#if review_session_id}}| Review | `{{review_session_id}}` |{{/if}}
+{{/each}}
 
 ### This Loop
 - Dev cycles: {{dev_cycles}}
@@ -94,28 +105,55 @@ epic_progress:
 
 ---
 
-### 5.3.1 Context Summarization (Delegated Mode)
+### 5.3.1 Delegate Mode: Dependency Re-evaluation
 
-<check if="delegated_mode == true">
-  <action>Compact context to prevent overflow in long-running loops:</action>
+<check if="delegate_mode == true">
+  <action>Re-evaluate dependency graph against current sprint-status:</action>
   
-  Discard from context:
-  - Raw agent outputs from previous loops
-  - Verbose error traces (keep one-line summaries)
-  - Intermediate status displays
+  ```javascript
+  // Identify regressed stories (sent back from review to in-progress)
+  const regressed = epicStories.filter(s =>
+    s.status === 'in-progress' &&
+    completed_stories_prev.includes(s.key)
+  );
   
-  Retain only:
-  ```yaml
-  loop_history:
-    - loop: {{loop_count}}
-      dev_completed: [story-keys...]
-      dev_failed: [story-keys...]
-      review_approved: [story-keys...]
-      review_needs_fixes: [story-keys...]
-      blocked: [story-keys...]
+  if (regressed.length > 0) {
+    // Re-block all downstream dependents
+    for (const story of regressed) {
+      const dependents = findDependents(dependency_graph, story.key);
+      for (const dep of dependents) {
+        if (dep.status !== 'done') {
+          blocked_stories.add(dep.key);
+        }
+      }
+    }
+    // Mark regressed stories for priority in next batch
+    regressed_stories = regressed.map(s => s.key);
+  }
+  
+  // Identify newly unblocked stories (all depends_on now 'done')
+  const newlyUnblocked = epicStories.filter(s =>
+    s.status === 'ready-for-dev' &&
+    s.depends_on.every(dep => sprintStatus[dep].status === 'done')
+  );
   ```
   
-  <output>📦 Context compacted: {{loop_count}} loops summarized</output>
+  <output>
+🔀 **Delegate: Dependency Re-evaluation**
+
+{{#if regressed_stories.length}}
+⚠️ Regressed (priority re-dev): {{regressed_stories}}
+   Downstream re-blocked: {{reblocked_dependents}}
+{{/if}}
+{{#if newlyUnblocked.length}}
+✅ Newly unblocked: {{newlyUnblocked | keys}}
+{{/if}}
+  </output>
+  
+  <action>Auto-continue to next analysis cycle with updated graph</action>
+  <action>Increment loop_count</action>
+  <action>Reset loop statistics</action>
+  <load>./step-02-analyze.md</load>
 </check>
 
 ---
@@ -212,6 +250,8 @@ Choose:
 <output>
 ## 🎉 Epic Complete!
 
+🎯 **Goal:** {{session_goal}}
+
 **{{selected_epic}}** fully developed and reviewed!
 
 ### Statistics
@@ -224,33 +264,19 @@ Choose:
 | Review Cycles | {{total_review_cycles}} |
 | Duration | {{duration}} |
 
-### Completed Stories
+### Completed Stories & Sessions
 {{#each done_stories}}
-- ✅ {{key}}
+#### ✅ {{key}}
+| Phase | Session |
+|-------|---------|
+{{#with ../story_sessions.[key]}}
+{{#if dev_session_id}}| Dev | `{{dev_session_id}}` |{{/if}}
+{{#if review_session_id}}| Review | `{{review_session_id}}` |{{/if}}
+{{/with}}
 {{/each}}
 </output>
 
 <action>Update sprint-status.yaml: {{selected_epic}} = "done"</action>
-
-<check if="delegated_mode == true">
-  <output>
-```yaml
-DEV_TEAM_MODE_RESULT:
-  status: completed
-  epic: {{selected_epic}}
-  loops: {{loop_count}}
-  stories:
-    done: [{{done_stories | keys}}]
-    failed: [{{failed_stories | keys}}]
-    blocked: [{{blocked_stories | keys}}]
-    remaining: []
-  summary: "Epic {{selected_epic}} fully completed. {{done_count}} stories done in {{loop_count}} loops."
-  action_required: none
-  next_suggested: "/bmad-bmm-retrospective"
-```
-  </output>
-  <halt reason="Delegated mode: epic complete" />
-</check>
 
 <ask>
 **What's next?**
@@ -279,31 +305,6 @@ Choose:
 ---
 
 ### 5.7 Epic Blocked
-
-<check if="delegated_mode == true">
-  <output>
-```yaml
-DEV_TEAM_MODE_RESULT:
-  status: blocked
-  epic: {{selected_epic}}
-  loops: {{loop_count}}
-  stories:
-    done: [{{done_stories | keys}}]
-    failed: [{{failed_stories | keys}}]
-    blocked: [{{blocked_stories | keys}}]
-    remaining: [{{remaining_stories | keys}}]
-  summary: "Epic {{selected_epic}} blocked. {{done_count}} done, {{blocked_count}} blocked after {{loop_count}} loops."
-  action_required: "Resolve blocked stories: {{blocked_stories | reasons}}"
-  blocked_details:
-{{#each blocked_stories}}
-    - story: {{key}}
-      reason: "{{reason}}"
-      attempts: {{retry_count}}
-{{/each}}
-```
-  </output>
-  <halt reason="Delegated mode: epic blocked" />
-</check>
 
 <output>
 ## ❌ Epic Blocked
@@ -341,6 +342,7 @@ Choose:
 # {implementation_artifacts}/dev-team-mode-state.yaml
 saved_state:
   timestamp: "{{date}}"
+  session_goal: "{{session_goal}}"
   selected_epic: "{{selected_epic}}"
   epic_mode: "{{epic_mode}}"
   execution_mode: "{{execution_mode}}"
@@ -349,6 +351,7 @@ saved_state:
   completed_stories: [{{completed}}]
   failed_stories: [{{failed}}]
   retry_counts: {{retry_counts}}
+  story_sessions: {{story_sessions}}
   phase: "paused"
   resume_step: "step-02-analyze"
 ```
@@ -372,28 +375,10 @@ State saved to `{implementation_artifacts}/dev-team-mode-state.yaml`
 
 ### 5.9 Graceful Exit
 
-<check if="delegated_mode == true">
-  <output>
-```yaml
-DEV_TEAM_MODE_RESULT:
-  status: paused
-  epic: {{selected_epic}}
-  loops: {{loop_count}}
-  stories:
-    done: [{{done_stories | keys}}]
-    failed: [{{failed_stories | keys}}]
-    blocked: [{{blocked_stories | keys}}]
-    remaining: [{{remaining_stories | keys}}]
-  summary: "Session ended. {{total_completed}} done, {{total_remaining}} remaining."
-  action_required: "Re-run dev-team-mode to continue remaining stories"
-```
-  </output>
-  <action>Clean up workflow state</action>
-  <halt reason="Delegated mode: graceful exit" />
-</check>
-
 <output>
 ## 👋 Dev Team Mode Complete
+
+🎯 **Goal:** {{session_goal}}
 
 ### Session Summary
 | Metric | Value |
@@ -402,6 +387,15 @@ DEV_TEAM_MODE_RESULT:
 | Loops | {{loop_count}} |
 | Completed | {{total_completed}} |
 | Remaining | {{total_remaining}} |
+
+### All Story Sessions
+{{#each story_sessions}}
+#### 📖 {{@key}}
+| Phase | Session |
+|-------|---------|
+{{#if dev_session_id}}| Dev | `{{dev_session_id}}` |{{/if}}
+{{#if review_session_id}}| Review | `{{review_session_id}}` |{{/if}}
+{{/each}}
 
 Run `/bmad-bmm-sprint-status` for overall progress.
 </output>

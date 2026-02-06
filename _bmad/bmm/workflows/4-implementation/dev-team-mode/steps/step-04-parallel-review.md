@@ -1,8 +1,7 @@
 # Step 4: Parallel Code Review Execution
 
 <critical>Launch code-review subagents for stories in "review" status</critical>
-<critical>Use review_category (ultrabrain) for high-quality adversarial review</critical>
-<critical>Different LLM category than dev ensures independent verification</critical>
+<critical>Use review_agent (bmm-dev) for high-quality adversarial review</critical>
 <critical>Handle outcomes: approved → done, needs-fixes → re-dev, blocked → manual</critical>
 
 ## EXECUTION PROTOCOL
@@ -42,8 +41,9 @@ STORY_PATH: {{story_path}}
 EXPECTED_OUTCOME:
 - Find 3-10 specific issues (NEVER "looks good")
 - Categorize: HIGH (must fix), MEDIUM (should fix), LOW (nice to fix)
-- Fix issues automatically OR create action items
-- Update status: "done" if all fixed, else "in-progress"
+- MEDIUM and LOW: fix directly during review (auto-fix in place)
+- HIGH: if fixable during review, fix it; if not, create action item
+- Update status: "done" if no unfixed HIGH remains, else "in-progress"
 - Sync sprint-status.yaml
 
 REVIEW SCOPE:
@@ -68,16 +68,20 @@ MUST DO:
 2. Verify EVERY [x] task has implementation
 3. Check git diff vs File List
 4. Find MINIMUM 3 issues
-5. Fix HIGH/MEDIUM automatically when possible
-6. Update story status based on outcome
+5. Fix ALL MEDIUM and LOW issues directly (do not defer)
+6. Attempt to fix HIGH issues; create action items only for unfixable HIGH
+7. Update story status: "done" if no unfixed HIGH, else "in-progress"
 
 MUST NOT:
 1. Accept "looks good" without findings
 2. Ignore security issues
 3. Skip test quality review
-4. Leave unfixed issues without action items
+4. Defer MEDIUM/LOW issues to re-dev cycle (fix them now)
+5. Leave unfixed HIGH issues without action items
 
-AUTO-FIX: Yes - fix and update story
+AUTO-FIX RULES:
+- MEDIUM/LOW: always fix in place during review
+- HIGH: fix if possible; flag back to dev cycle only if reviewer cannot fix
 ```
 
 ---
@@ -91,24 +95,45 @@ AUTO-FIX: Yes - fix and update story
 - Reviewer {{@index}}: {{key}} → Starting adversarial review...
 {{/each}}
 
-💡 Using "{{review_category}}" for high-quality review
+💡 Using "{{review_agent}}" agent for high-quality review
 </output>
 
 <action>Execute parallel delegation:</action>
 
 ```javascript
+// Agent fallback chain: [review_agent, ...review_agent_fallbacks]
+const agentChain = ["{{review_agent}}", ...{{review_agent_fallbacks}}];
+
 for (const story of stories_to_review) {
-  const result = delegate_task({
-    category: "{{review_category}}",  // "ultrabrain"
-    load_skills: ["bmad-bmm-code-review"],
-    run_in_background: true,
-    prompt: buildReviewPrompt(story)
-  });
-  
+  let result = null;
+  let usedAgent = null;
+
+  for (const agent of agentChain) {
+    try {
+      result = delegate_task({
+        subagent_type: agent,
+        load_skills: ["bmad-bmm-code-review"],
+        run_in_background: true,
+        prompt: buildReviewPrompt(story)
+      });
+      usedAgent = agent;
+      break;
+    } catch (e) {
+      if (e.includes("MODEL_CAPACITY") || e.includes("UNAVAILABLE")) {
+        console.log(`⚠️ ${agent} unavailable, trying next fallback...`);
+        continue;
+      }
+      throw e;
+    }
+  }
+
+  if (!result) throw new Error("All agents in fallback chain unavailable");
+
   review_agents.push({
     task_id: result.task_id,
     session_id: result.session_id,
     story_key: story.key,
+    agent_used: usedAgent,
     phase: "code-review",
     status: "running"
   });
@@ -122,6 +147,18 @@ active_agents: [{{review_agents}}]
 phase: 'review-running'
 ```
 
+<action>Persist review session mapping:</action>
+
+```javascript
+for (const agent of review_agents) {
+  story_sessions[agent.story_key] = {
+    ...story_sessions[agent.story_key],
+    review_session_id: agent.session_id,
+    review_task_id: agent.task_id
+  };
+}
+```
+
 ---
 
 ### 4.4 Monitor Progress
@@ -129,25 +166,28 @@ phase: 'review-running'
 <output>
 ## ⏳ Code Reviews In Progress
 
-| Story | Task ID | Session ID | Status |
-|-------|---------|------------|--------|
+🎯 **Goal:** {{session_goal}}
+
 {{#each review_agents}}
-| {{story_key}} | `{{task_id}}` | `{{session_id}}` | {{status}} |
-{{/each}}
+### 🔍 {{story_key}}
+| Field | Value |
+|-------|-------|
+| Agent | {{agent_used}} |
+| Session | `{{session_id}}` |
+| Task ID | `{{task_id}}` |
+| Status | {{status}} |
 
-### 📋 How to Check Progress
-
-View any reviewer's real-time progress:
-```
-background_output(task_id="<task_id>")
-```
-
-Example:
-{{#with review_agents.[0]}}
 ```
 background_output(task_id="{{task_id}}")
 ```
-{{/with}}
+{{/each}}
+
+### 📋 Session Quick Links
+| Story | Dev Session | Review Session |
+|-------|-------------|----------------|
+{{#each review_agents}}
+| **{{story_key}}** | `{{story_sessions.[story_key].dev_session_id}}` | `{{session_id}}` |
+{{/each}}
 </output>
 
 <action>Wait for completion notifications</action>
@@ -162,32 +202,37 @@ background_output(task_id="{{task_id}}")
 
 | Outcome | Condition | Action |
 |---------|-----------|--------|
-| `approved` | All issues fixed, status="done" | → done_stories |
-| `needs-fixes` | Action items created, status="in-progress" | → needs_redev_queue |
+| `approved` | No unfixed HIGH issues (MEDIUM/LOW all fixed in place) | → done_stories |
+| `needs-fixes` | Unfixed HIGH issues remain | → needs_redev_queue |
 | `blocked` | Critical issues, cannot proceed | → blocked_stories |
 
 <switch on="review_outcome">
   <case value="approved">
-    <output>✅ **{{story_key}}** - Review passed, marked DONE</output>
+    <output>
+✅ **{{story_key}}** - Review passed, marked DONE
+
+Fixed during review: {{medium_fixed}} Medium, {{low_fixed}} Low
+{{#if high_count}}HIGH issues fixed during review: {{high_fixed}}{{/if}}
+    </output>
     <action>Move to done_stories</action>
     <action>Verify sprint-status = "done"</action>
   </case>
   
   <case value="needs-fixes">
     <output>
-⚠️ **{{story_key}}** - Issues found
+⚠️ **{{story_key}}** - Unfixed HIGH issues
 
-Issues: {{high_count}} High, {{medium_count}} Medium, {{low_count}} Low
-{{#if auto_fixed}}Auto-fixed: {{fixed_count}} | Remaining: {{remaining_count}}{{/if}}
+Fixed during review: {{medium_fixed}} Medium, {{low_fixed}} Low
+Unfixed HIGH: {{unfixed_high_count}} (requires re-dev)
     </output>
     
-    <action>Add to needs_redev_queue:</action>
+    <action>Add to needs_redev_queue (HIGH issues only):</action>
     ```yaml
     needs_redev:
       - key: "{{story_key}}"
         review_session_id: "{{session_id}}"
-        action_items: [{{items}}]
-        high_severity: {{high_count}}
+        action_items: [{{high_only_items}}]
+        unfixed_high_count: {{unfixed_high_count}}
     ```
   </case>
   
@@ -217,25 +262,25 @@ Blocking Issues:
 {{needs_redev_queue.length}} stories need fixes. Auto-pilot: re-running dev-story.
   </output>
   
-  <action>For each story:</action>
+  <action>For each story (only unfixed HIGH issues are sent back):</action>
   
   ```javascript
   delegate_task({
     session_id: original_dev_session_id,
     prompt: `
-RESUME: Code review found issues requiring fixes.
+RESUME: Code review found HIGH severity issues that could not be fixed during review.
 
-REVIEW FINDINGS:
-{{action_items}}
+Note: MEDIUM and LOW issues were already fixed by the reviewer.
 
-TASK: Address ALL [AI-Review] action items
+UNFIXED HIGH ISSUES:
+{{high_only_items}}
+
+TASK: Fix ALL unfixed HIGH severity [AI-Review] action items
 
 EXPECTED:
-- All [AI-Review] tasks marked [x]
+- All HIGH [AI-Review] tasks marked [x]
 - Tests updated for fixes
 - Status back to "review"
-
-PRIORITY: Fix HIGH severity first
     `
   });
   ```
@@ -245,12 +290,12 @@ PRIORITY: Fix HIGH severity first
 
 <check if="needs_redev_queue not empty AND NOT autopilot">
   <ask>
-## 🔄 Stories Need Fixes
+## 🔄 Stories Have Unfixed HIGH Issues
 
-| Story | Issues | High Severity |
-|-------|--------|---------------|
+| Story | Unfixed HIGH |
+|-------|--------------|
 {{#each needs_redev_queue}}
-| {{key}} | {{action_items.length}} | {{high_count}} |
+| {{key}} | {{unfixed_high_count}} |
 {{/each}}
 
 [1] **Auto-fix** - Run dev-story to address findings

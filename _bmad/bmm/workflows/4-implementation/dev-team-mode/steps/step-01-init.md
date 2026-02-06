@@ -7,42 +7,6 @@
 
 ## EXECUTION PROTOCOL
 
-### 1.0 Detect Delegated Mode
-
-<action>Check if prompt contains PRE-SELECTED block:</action>
-
-```
-Pattern: "PRE-SELECTED:" followed by "- epic:", "- mode:", "- execution:"
-```
-
-<check if="PRE-SELECTED block found in prompt">
-  <action>Parse pre-filled parameters:</action>
-  
-  ```yaml
-  delegated_mode: true
-  pre_selected:
-    epic: "{{parsed_epic}}"           # e.g., "epic-2"
-    mode: "{{parsed_mode}}"           # autopilot | continue | select
-    execution: "{{parsed_execution}}" # parallel | sequential
-    max_parallel: "{{parsed_max}}"    # number, default 3
-  ```
-  
-  <output>
-🤖 **Delegated Mode Detected**
-
-Pre-filled selections:
-- Epic: {{pre_selected.epic}}
-- Mode: {{pre_selected.mode}}
-- Execution: {{pre_selected.execution}}
-
-Skipping interactive prompts. Proceeding directly.
-  </output>
-  
-  <action>Set delegated_mode = true</action>
-  <action>Set autopilot = (pre_selected.mode == "autopilot")</action>
-  <action>Skip to 1.1 with pre-filled values</action>
-</check>
-
 ### 1.1 Locate Sprint Status File
 
 <action>Read {sprint_status_file}</action>
@@ -99,29 +63,6 @@ epics:
 ---
 
 ## SELECTION 1: Epic Choice (MANDATORY)
-
-<check if="delegated_mode == true AND pre_selected.epic exists">
-  <action>Use pre-filled epic selection:</action>
-  
-  <switch on="pre_selected.mode">
-    <case value="autopilot">
-      <action>Set selected_epic = pre_selected.epic (or first epic with ready-for-dev if "auto")</action>
-      <action>Set epic_mode = "autopilot"</action>
-      <action>Set autopilot = true</action>
-    </case>
-    <case value="continue">
-      <action>Set selected_epic = epic with in-progress/review stories (or pre_selected.epic)</action>
-      <action>Set epic_mode = "continue"</action>
-    </case>
-    <case value="select">
-      <action>Set selected_epic = pre_selected.epic</action>
-      <action>Set epic_mode = "selected"</action>
-    </case>
-  </switch>
-  
-  <output>✅ Epic auto-selected: {{selected_epic}} ({{epic_mode}})</output>
-  <goto step="SELECTION 2" />
-</check>
 
 <action>Determine recommendation based on state:</action>
 
@@ -191,25 +132,6 @@ Enter [1], [2], [3], or epic name directly:
 
 ## SELECTION 2: Execution Mode (MANDATORY)
 
-<check if="delegated_mode == true AND pre_selected.execution exists">
-  <action>Use pre-filled execution mode:</action>
-  
-  <switch on="pre_selected.execution">
-    <case value="parallel">
-      <action>Set parallel_mode = true</action>
-      <action>Set execution_mode = "parallel"</action>
-      <action>Set max_parallel_agents = pre_selected.max_parallel OR 3</action>
-    </case>
-    <case value="sequential">
-      <action>Set parallel_mode = false</action>
-      <action>Set execution_mode = "sequential"</action>
-    </case>
-  </switch>
-  
-  <output>✅ Execution mode auto-selected: {{execution_mode}}</output>
-  <goto step="1.4 Validate Epic" />
-</check>
-
 <action>Count actionable stories in selected_epic:</action>
 
 ```yaml
@@ -218,6 +140,12 @@ actionable:
   in_progress: [list]
   review: [list]
   total: count
+```
+
+<action>Check if sprint-status has depends_on data for stories in this epic:</action>
+
+```yaml
+has_depends_on: true/false  # true if any story entry is object with depends_on field
 ```
 
 <ask>
@@ -230,16 +158,22 @@ actionable:
 [1] **Parallel** - Run up to {{max_parallel_agents}} stories simultaneously
     ✅ Faster completion
     ⚠️ Potential merge conflicts
-    Best for: Independent stories, no dependencies
+    Best for: Independent stories, manual batch control
 
 [2] **Sequential** - Run one story at a time
     ✅ Stable, no conflicts
     ✅ Each story can reference previous implementation
-    Best for: Dependent stories, complex logic
+    Best for: Highly coupled stories, complex logic
 
-{{#if actionable.total > 1}}💡 Recommended: Parallel - multiple parallelizable stories{{else}}💡 Recommended: Sequential - only one story{{/if}}
+[3] **Delegate** - Dependency-aware auto-scheduling
+    ✅ Reads `depends_on` from sprint-status.yaml
+    ✅ Auto-launches stories when dependencies are met
+    ✅ Maximizes parallelism while respecting dependency graph
+    Best for: Epics with mixed independent/dependent stories
 
-Enter [1] or [2]:
+{{#if has_depends_on}}💡 Recommended: Delegate - sprint-status has dependency data{{else if actionable.total > 1}}💡 Recommended: Parallel - multiple parallelizable stories{{else}}💡 Recommended: Sequential - only one story{{/if}}
+
+Enter [1], [2], or [3]:
 </ask>
 
 ### Handle Selection 2
@@ -248,13 +182,46 @@ Enter [1] or [2]:
   <case value="1">
     <action>Set parallel_mode = true</action>
     <action>Set execution_mode = "parallel"</action>
+    <action>Set delegate_mode = false</action>
   </case>
   
   <case value="2">
     <action>Set parallel_mode = false</action>
     <action>Set execution_mode = "sequential"</action>
+    <action>Set delegate_mode = false</action>
+  </case>
+  
+  <case value="3">
+    <action>Set parallel_mode = true</action>
+    <action>Set execution_mode = "delegate"</action>
+    <action>Set delegate_mode = true</action>
   </case>
 </switch>
+
+---
+
+## SELECTION 3: Session Goal (MANDATORY)
+
+<action>Ask user to declare the completion goal for this dev-team-mode session:</action>
+
+<ask>
+## Selection 3: Session Goal
+
+**What is the completion goal for this session?**
+
+Declare what "done" looks like for this dev-team-mode run. Examples:
+- "Complete all stories in epic-2"
+- "Finish stories 2-1 and 2-2, get 2-3 to review"
+- "Full autopilot until epic-3 is done"
+
+Enter your goal:
+</ask>
+
+<action>Set session_goal = user input</action>
+
+<output>
+🎯 **Session Goal:** {{session_goal}}
+</output>
 
 ---
 
@@ -281,17 +248,21 @@ Stories are either `backlog` (need create-story) or `done`.
 
 ```yaml
 workflowType: 'dev-team-mode'
+session_goal: '{{session_goal}}'
 selected_epic: '{{selected_epic}}'
 epic_mode: '{{epic_mode}}'
 execution_mode: '{{execution_mode}}'
 parallel_mode: {{parallel_mode}}
+delegate_mode: {{delegate_mode}}
 autopilot: {{autopilot}}
 max_parallel_agents: {{max_parallel_agents}}
+dependency_graph: {}
 parallel_stories: []
 active_agents: []
 completed_stories: []
 failed_stories: []
 retry_counts: {}
+story_sessions: {}
 loop_count: 0
 phase: 'analyzing'
 started_at: '{{date}}'
@@ -302,13 +273,15 @@ started_at: '{{date}}'
 
 | Setting | Value |
 |---------|-------|
+| 🎯 Goal | {{session_goal}} |
 | Epic | {{selected_epic}} |
 | Epic Mode | {{epic_mode}} |
 | Execution Mode | {{execution_mode}} |
 | Parallel | {{#if parallel_mode}}Yes (max {{max_parallel_agents}}){{else}}No (sequential){{/if}} |
+| Delegate | {{#if delegate_mode}}Yes (dependency-aware auto-scheduling){{else}}No{{/if}} |
 | Actionable Stories | {{actionable.total}} |
 
-Proceeding to parallelism analysis...
+Proceeding to {{#if delegate_mode}}dependency analysis{{else}}parallelism analysis{{/if}}...
 </output>
 
 <action>Load: ./step-02-analyze.md</action>

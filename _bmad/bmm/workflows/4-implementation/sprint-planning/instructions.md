@@ -48,22 +48,60 @@
     <note>After discovery, these content variables are available: {epics_content} (all epics loaded - uses FULL_LOAD strategy)</note>
   </step>
 
-<step n="2" goal="Build sprint status structure">
+<step n="2" goal="Build sprint status structure with dependencies">
 <action>For each epic found, create entries in this order:</action>
 
 1. **Epic entry** - Key: `epic-{num}`, Default status: `backlog`
-2. **Story entries** - Key: `{epic}-{story}-{title}`, Default status: `backlog`
+2. **Story entries** - Key: `{epic}-{story}-{title}`, with `status` and `depends_on`
 3. **Retrospective entry** - Key: `epic-{num}-retrospective`, Default status: `optional`
 
-**Example structure:**
+**Story entry format (object, not string):**
 
 ```yaml
 development_status:
   epic-1: backlog
-  1-1-user-authentication: backlog
-  1-2-account-management: backlog
+  1-1-user-authentication:
+    status: backlog
+    depends_on: []
+  1-2-account-management:
+    status: backlog
+    depends_on: [1-1-user-authentication]
+  1-3-plant-data-model:
+    status: backlog
+    depends_on: [1-1-user-authentication]
+  1-4-add-plant-manual:
+    status: backlog
+    depends_on: [1-2-account-management, 1-3-plant-data-model]
   epic-1-retrospective: optional
 ```
+
+**Dependency Calculation — Priority Cascade:**
+
+Apply these rules in order. The FIRST matching rule wins for each story:
+
+**Priority 1 — Explicit `Depends On` field in epic file:**
+- Look for `**Depends On:**` field on each story
+- `**Depends On:** None` → `depends_on: []` (explicitly no dependencies, can start immediately)
+- `**Depends On:** Story 1.1, Story 1.3` → `depends_on: [1-1-..., 1-3-...]` (convert to kebab-case keys)
+- This is the authoritative source when present. Do NOT override or supplement with inference.
+
+**Priority 2 — Prose-based explicit references (fallback when no `Depends On` field):**
+- Scan story title, description, and acceptance criteria for phrases like:
+  - "depends on Story X.Y", "requires X.Y", "after X.Y is complete", "builds on X.Y"
+- Convert matched references to kebab-case story keys
+
+**Priority 3 — Sequential default (fallback when no explicit or prose references found):**
+- Each story depends on the immediately preceding story within the same epic
+- Story N.1 → `depends_on: []` (first story in epic always has no intra-epic dependencies)
+- Story N.2 → `depends_on: [N-1-...]`
+- Story N.3 → `depends_on: [N-2-...]`
+- This is a safe default because `create-epics-and-stories` already enforces that stories are ordered so each can be completed based only on previous stories
+
+**Rules that apply to ALL priorities:**
+
+- **Intra-epic only**: Only track dependencies within the same epic. Cross-epic dependencies are handled by epic ordering.
+- **Convert story references to kebab-case keys**: `Story 1.2: Account Management` → `1-2-account-management`
+- **Validate references**: Every `depends_on` entry must reference a real story key within the same epic. Drop invalid references and warn.
 
 </step>
 
@@ -106,20 +144,23 @@ development_status:
 #   - in-progress: Epic actively being worked on
 #   - done: All stories in epic completed
 #
-# Epic Status Transitions:
-#   - backlog → in-progress: Automatically when first story is created (via create-story)
-#   - in-progress → done: Manually when all stories reach 'done' status
+# Story Format:
+#   status: backlog | ready-for-dev | in-progress | review | done
+#   depends_on: [] (list of story keys this story depends on, within same epic)
 #
-# Story Status:
-#   - backlog: Story only exists in epic file
-#   - ready-for-dev: Story file created in stories folder
-#   - in-progress: Developer actively working on implementation
-#   - review: Ready for code review (via Dev's code-review workflow)
-#   - done: Story completed
+# Story Status Flow:
+#   backlog → ready-for-dev → in-progress → review → done
 #
 # Retrospective Status:
 #   - optional: Can be completed but not required
 #   - done: Retrospective has been completed
+#
+# DEPENDENCY NOTES:
+# =================
+# - depends_on lists story keys that MUST be 'done' before this story can start
+# - Only intra-epic dependencies are tracked (cross-epic deps handled by epic ordering)
+# - Stories with empty depends_on [] can start immediately
+# - dev-team-mode "delegate" execution mode uses depends_on for auto-scheduling
 #
 # WORKFLOW NOTES:
 # ===============
@@ -135,7 +176,7 @@ tracking_system: { tracking_system }
 story_location: { story_location }
 
 development_status:
-  # All epics, stories, and retrospectives in order
+  # All epics, stories (with status + depends_on), and retrospectives in order
 ```
 
 <action>Write the complete sprint status YAML to {status_file}</action>

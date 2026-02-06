@@ -68,15 +68,15 @@ Choose:
 
 | Step | Purpose | Key Actions |
 |------|---------|-------------|
-| 1 | Init | 2 selection prompts: epic choice + execution mode |
+| 1 | Init | 3 selection prompts: epic choice + execution mode + session goal |
 | 2 | Analyze | Dependency analysis, build parallel batch |
-| 3 | Dev | Launch dev-story subagents (background) |
-| 4 | Review | Launch code-review subagents (different LLM) |
-| 5 | Sync | Update status, loop or exit decision |
+| 3 | Dev | Launch dev-story subagents (background), track story↔session |
+| 4 | Review | Launch code-review subagents (different LLM), track story↔session |
+| 5 | Sync | Update status, display story sessions, loop or exit decision |
 
 ---
 
-## TWO-STEP SELECTION (Step 1)
+## THREE-STEP SELECTION (Step 1)
 
 ### Selection 1: Epic Choice
 
@@ -92,6 +92,11 @@ Choose:
 |--------|----------|
 | Parallel | Multiple stories concurrent (up to max_parallel_agents) |
 | Sequential | One story at a time |
+| Delegate | Dependency-aware auto-scheduling using `depends_on` from sprint-status.yaml. Launches independent stories in parallel, auto-unblocks dependents as stories complete. Regressed stories (sent back by review) get priority. |
+
+### Selection 3: Session Goal
+
+User declares the completion goal for this dev-team-mode session. Displayed in all summaries and exit screens.
 
 ---
 
@@ -101,65 +106,10 @@ Choose:
 |---------|---------|-------------|
 | `max_parallel_agents` | 3 | Max concurrent agents |
 | `max_retry_per_story` | 3 | Retries before blocking |
-| `dev_category` | deep | delegate_task category for dev |
-| `review_category` | ultrabrain | delegate_task category for review |
-| `delegated_mode` | false | Auto-detected when PRE-SELECTED block present |
-
----
-
-## DELEGATED EXECUTION (Orchestrator Support)
-
-When launched by an orchestrator (e.g., Sisyphus ultrawork via `delegate_task`), this workflow supports **delegated mode** to bypass interactive prompts.
-
-### How It Works
-
-1. Orchestrator includes `PRE-SELECTED:` block in prompt with epic, mode, execution choices
-2. Step 1 detects the block, skips both selection prompts
-3. All subsequent `<ask>` prompts auto-resolve (auto-fix, auto-continue)
-4. Context is compacted after each loop to prevent overflow
-5. On exit, a structured `DEV_TEAM_MODE_RESULT:` YAML block is returned
-
-### Orchestrator Usage
-
-```javascript
-delegate_task({
-  category: "deep",
-  load_skills: ["bmad-bmm-dev-team-mode"],
-  run_in_background: false,
-  prompt: `
-    TASK: Run dev-team-mode
-
-    PRE-SELECTED:
-    - epic: epic-2
-    - mode: autopilot
-    - execution: parallel
-    - max_parallel: 3
-
-    CONTEXT:
-    - sprint_status: docs/sprint-status.yaml
-    - story_dir: docs/stories/
-    - project_context: docs/project-context.md
-
-    Run until epic complete or all stories blocked.
-  `
-})
-```
-
-### Return Format
-
-```yaml
-DEV_TEAM_MODE_RESULT:
-  status: completed | blocked | paused | error
-  epic: epic-2
-  loops: 3
-  stories:
-    done: [1-1-setup, 1-2-auth]
-    failed: []
-    blocked: [1-3-integration]
-    remaining: [1-4-polish]
-  summary: "2 stories completed, 1 blocked"
-  action_required: "Resolve 1-3 dependency"
-```
+| `dev_agent` | bmm-dev | Primary agent for dev-story (Sonnet) |
+| `dev_agent_fallbacks` | [bmm-dev] | Fallback agents if dev_agent model unavailable |
+| `review_agent` | bmm-dev-reviewer | Primary agent for code-review (Opus) |
+| `review_agent_fallbacks` | [bmm-dev] | Fallback agents if review_agent model unavailable |
 
 ---
 
@@ -168,8 +118,9 @@ DEV_TEAM_MODE_RESULT:
 ### Dev-Story
 
 ```javascript
+// Fallback chain: [dev_agent, ...dev_agent_fallbacks]
 delegate_task({
-  category: "deep",
+  subagent_type: "bmm-dev",           // Sonnet - fast, accurate code generation
   load_skills: ["bmad-bmm-dev-story"],
   run_in_background: true,
   prompt: "..."
@@ -179,13 +130,23 @@ delegate_task({
 ### Code-Review
 
 ```javascript
+// Fallback chain: [review_agent, ...review_agent_fallbacks]
 delegate_task({
-  category: "ultrabrain",
+  subagent_type: "bmm-dev-reviewer",  // Opus - deep reasoning for adversarial review
   load_skills: ["bmad-bmm-code-review"],
   run_in_background: true,
   prompt: "..."
 });
 ```
+
+### Agent Fallback Behavior
+
+When the primary agent's model is unavailable (capacity exhausted, provider down), the workflow automatically tries the next agent in the fallback chain. The fallback chain is:
+
+| Role | Primary | Fallback | Model Flow |
+|------|---------|----------|------------|
+| Dev | `bmm-dev` | `bmm-dev` | Sonnet → Sonnet |
+| Review | `bmm-dev-reviewer` | `bmm-dev` | Opus → Sonnet |
 
 ---
 
@@ -205,20 +166,25 @@ This returns the agent's current status, latest tool calls, and output so far �
 
 ```yaml
 workflowType: 'dev-team-mode'
+session_goal: ''            # user-declared completion goal
 selected_epic: ''
-epic_mode: ''           # continue|selected|autopilot
-execution_mode: ''      # parallel|sequential
+epic_mode: ''             # continue|selected|autopilot
+execution_mode: ''        # parallel|sequential|delegate
 parallel_mode: false
+delegate_mode: false
 autopilot: false
+dependency_graph: {}
 parallel_stories: []
 stories_to_review: []
 blocked_stories: []
+regressed_stories: []
 active_agents: []
 completed_stories: []
 failed_stories: []
 retry_counts: {}
+story_sessions: {}        # story_key → { dev_session_id, review_session_id, dev_task_id, review_task_id }
 loop_count: 0
-phase: 'init'           # init|analyzing|dev|dev-running|review|review-running|sync
+phase: 'init'             # init|analyzing|dev|dev-running|review|review-running|sync
 started_at: ''
 ```
 

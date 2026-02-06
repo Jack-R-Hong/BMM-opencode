@@ -1,6 +1,7 @@
 # Story {{epic_num}}.{{story_num}}: {{story_title}}
 
 Status: ready-for-dev
+Depends_on: {{depends_on}}
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

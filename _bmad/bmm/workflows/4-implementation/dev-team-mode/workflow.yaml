@@ -34,9 +34,12 @@ variables:
   dev_story_skill: "bmad-bmm-dev-story"
   code_review_skill: "bmad-bmm-code-review"
   
-  # Agent categories for delegation
-  dev_category: "deep"
-  review_category: "ultrabrain"
+  # Agent for delegation (uses agent's configured model and tools)
+  # Primary agent tried first; fallbacks used if model unavailable
+  dev_agent: "bmm-dev"
+  dev_agent_fallbacks: ["bmm-dev"]
+  review_agent: "bmm-dev-reviewer"
+  review_agent_fallbacks: ["bmm-dev"]
 
 # Smart input file references
 input_file_patterns:
@@ -54,26 +57,22 @@ input_file_patterns:
     whole: "**/project-context.md"
     load_strategy: "FULL_LOAD"
 
-# Delegated mode (orchestrator support)
-delegated_mode:
-  enabled: false
-  pre_selected:
-    epic: ""
-    mode: ""           # autopilot | continue | select
-    execution: ""      # parallel | sequential
-    max_parallel: 3
-
 # Workflow state tracking (maintained in frontmatter during execution)
 state_schema:
   workflowType: "dev-team-mode"
-  delegated_mode: false
+  session_goal: ""            # User-declared completion goal for this session
   selected_epic: ""
+  execution_mode: ""        # parallel | sequential | delegate
+  delegate_mode: false
+  dependency_graph: {}
   parallel_stories: []
   active_agents: []
   completed_stories: []
   failed_stories: []
+  regressed_stories: []
+  story_sessions: {}          # story_key → { dev_session_id, review_session_id, dev_task_id, review_task_id }
   loop_count: 0
-  phase: "init"  # init | analyzing | dev | review | sync
+  phase: "init"             # init | analyzing | dev | dev-running | review | review-running | sync
 
 # Exit conditions
 exit_triggers:

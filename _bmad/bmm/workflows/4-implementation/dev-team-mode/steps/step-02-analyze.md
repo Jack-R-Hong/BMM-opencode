@@ -9,15 +9,20 @@
 
 ### 2.0 Apply Execution Mode
 
-<switch on="parallel_mode">
-  <case value="true">
+<switch on="execution_mode">
+  <case value="parallel">
     <action>Set effective_max_parallel = {{max_parallel_agents}}</action>
     <output>⚡ **Parallel Mode** - Analyzing dependencies, max {{max_parallel_agents}} concurrent</output>
   </case>
   
-  <case value="false">
+  <case value="sequential">
     <action>Set effective_max_parallel = 1</action>
     <output>📝 **Sequential Mode** - One story at a time</output>
+  </case>
+  
+  <case value="delegate">
+    <action>Set effective_max_parallel = {{max_parallel_agents}}</action>
+    <output>🔀 **Delegate Mode** - Dependency-aware auto-scheduling, max {{max_parallel_agents}} concurrent</output>
   </case>
 </switch>
 
@@ -112,24 +117,53 @@ Choose [1], [2], or [3]:
 
 ### 2.4 Analyze Dependencies
 
-<action>For each ready-for-dev story, detect dependencies:</action>
+<check if="delegate_mode == true">
+  <action>Read depends_on directly from sprint-status.yaml (authoritative source):</action>
+  
+  ```javascript
+  // In delegate mode, sprint-status.yaml has structured story entries
+  // e.g. { status: "ready-for-dev", depends_on: ["1-1-user-auth"] }
+  for (const story of epicStories) {
+    const entry = sprintStatus[story.key];
+    dependency_graph[story.key] = {
+      depends_on: entry.depends_on || [],
+      status: entry.status
+    };
+  }
+  ```
+  
+  <output>
+📊 **Dependency Graph** (from sprint-status.yaml)
 
-**Detection methods:**
+{{#each dependency_graph}}
+{{key}}: {{status}} {{#if depends_on.length}}→ depends on: {{depends_on}}{{else}}→ independent{{/if}}
+{{/each}}
+  </output>
+</check>
 
-1. **Explicit:** `depends_on` field in story metadata
-2. **Dev Notes:** References like "requires X-Y", "uses API from X-Y"
-3. **Technical inference:**
-   - DB schema creators → consumers
-   - API endpoint creators → consumers
-   - Component builders → extenders
+<check if="delegate_mode == false">
+  <action>For each ready-for-dev story, detect dependencies:</action>
+
+  **Detection methods:**
+
+  1. **Explicit:** `depends_on` field in story metadata
+  2. **Dev Notes:** References like "requires X-Y", "uses API from X-Y"
+  3. **Technical inference:**
+      - DB schema creators → consumers
+      - API endpoint creators → consumers
+      - Component builders → extenders
+</check>
 
 <action>Build dependency graph:</action>
 
 ```yaml
-dependencies:
+dependency_graph:
+  2-1-personality-system:
+    depends_on: []
+  2-2-audio-service:
+    depends_on: []
   2-3-chat-interface:
     depends_on: [2-1-personality-system]
-    reason: "Uses personality engine from 2-1"
   2-4-voice-integration:
     depends_on: [2-2-audio-service, 2-3-chat-interface]
 ```
@@ -141,6 +175,19 @@ dependencies:
 | `parallelizable` | No dependencies OR all dependencies are `done` |
 | `blocked` | Has dependencies that are NOT `done` |
 
+<critical>Dependency Regression Rule</critical>
+
+A dependency is ONLY met when its status = `done` (passed code-review). If a dependency regresses from `review` or `done` back to `in-progress` (code-review added HIGH tasks), ALL stories that depend on it MUST:
+
+1. **Not yet started** → remain `blocked`
+2. **Already running** → let current dev finish, but re-block before next phase
+3. **In review** → complete review, but re-queue for verification after dependency is re-done
+
+In delegate mode, when code-review sends a dependency back to dev:
+- Re-prioritize: the regressed story gets **priority** in the next dev batch
+- Re-block: all downstream dependents are re-evaluated against the graph
+- Stories with downstream dependents sort first (unblock the most work)
+
 ---
 
 ### 2.5 Build Execution Batch
@@ -148,10 +195,10 @@ dependencies:
 <action>Apply selection rules:</action>
 
 ```python
-# Pseudocode
 parallelizable = [s for s in ready_stories if s.dependencies_met]
 parallelizable.sort(key=lambda s: (
-    -len(s.downstream_dependents),  # Blockers first
+    -s.regressed,                    # Regressed stories first (sent back by review)
+    -len(s.downstream_dependents),   # Then stories that unblock the most work
     s.story_number                   # Then by order
 ))
 
@@ -243,6 +290,7 @@ Choose:
 <action>Update frontmatter:</action>
 
 ```yaml
+dependency_graph: {{dependency_graph}}
 parallel_stories: [{{parallel_batch.dev_stories | keys}}]
 stories_to_review: [{{parallel_batch.review_stories | keys}}]
 blocked_stories: [{{parallel_batch.blocked_stories | keys}}]

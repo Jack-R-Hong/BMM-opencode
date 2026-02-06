@@ -11,7 +11,8 @@
 ### Configuration
 - [ ] {config_source} accessible
 - [ ] max_parallel_agents reasonable (1-5)
-- [ ] dev_category and review_category are valid
+- [ ] dev_agent and review_agent are valid agent names
+- [ ] dev_agent_fallbacks and review_agent_fallbacks contain valid agent names
 
 ---
 
@@ -39,7 +40,7 @@
 - [ ] Sprint status updated
 
 ### Step 4: Parallel Review
-- [ ] Review agents use review_category
+- [ ] Review agents use review_agent (with fallback chain if model unavailable)
 - [ ] Adversarial review prompts sent
 - [ ] Outcomes parsed (approved/needs-fixes/blocked)
 - [ ] Sprint status synchronized

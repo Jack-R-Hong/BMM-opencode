@@ -67,19 +67,39 @@ HALT IF:
 <action>Execute parallel delegation:</action>
 
 ```javascript
-// For each story, call delegate_task
+// Agent fallback chain: [dev_agent, ...dev_agent_fallbacks]
+const agentChain = ["{{dev_agent}}", ...{{dev_agent_fallbacks}}];
+
 for (const story of parallel_batch.dev_stories) {
-  const result = delegate_task({
-    category: "{{dev_category}}",  // "deep"
-    load_skills: ["bmad-bmm-dev-story"],
-    run_in_background: true,
-    prompt: buildPrompt(story)
-  });
-  
+  let result = null;
+  let usedAgent = null;
+
+  for (const agent of agentChain) {
+    try {
+      result = delegate_task({
+        subagent_type: agent,
+        load_skills: ["bmad-bmm-dev-story"],
+        run_in_background: true,
+        prompt: buildPrompt(story)
+      });
+      usedAgent = agent;
+      break;
+    } catch (e) {
+      if (e.includes("MODEL_CAPACITY") || e.includes("UNAVAILABLE")) {
+        console.log(`⚠️ ${agent} unavailable, trying next fallback...`);
+        continue;
+      }
+      throw e;
+    }
+  }
+
+  if (!result) throw new Error("All agents in fallback chain unavailable");
+
   active_agents.push({
     task_id: result.task_id,
     session_id: result.session_id,
     story_key: story.key,
+    agent_used: usedAgent,
     phase: "dev-story",
     status: "running",
     started_at: Date.now()
@@ -94,6 +114,18 @@ active_agents: [{{active_agents}}]
 phase: 'dev-running'
 ```
 
+<action>Persist session mapping for each launched agent:</action>
+
+```javascript
+for (const agent of active_agents) {
+  story_sessions[agent.story_key] = {
+    ...story_sessions[agent.story_key],
+    dev_session_id: agent.session_id,
+    dev_task_id: agent.task_id
+  };
+}
+```
+
 ---
 
 ### 3.3 Monitor Progress
@@ -101,27 +133,29 @@ phase: 'dev-running'
 <output>
 ## ⏳ Development In Progress
 
-| Story | Task ID | Session ID | Status | Duration |
-|-------|---------|------------|--------|----------|
+🎯 **Goal:** {{session_goal}}
+
 {{#each active_agents}}
-| {{story_key}} | `{{task_id}}` | `{{session_id}}` | {{status}} | {{duration}} |
-{{/each}}
+### 📖 {{story_key}}
+| Field | Value |
+|-------|-------|
+| Agent | {{agent_used}} |
+| Session | `{{session_id}}` |
+| Task ID | `{{task_id}}` |
+| Status | {{status}} |
+| Duration | {{duration}} |
 
-### 📋 How to Check Progress
-
-View any agent's real-time progress:
-```
-background_output(task_id="<task_id>")
-```
-
-Example:
-{{#with active_agents.[0]}}
 ```
 background_output(task_id="{{task_id}}")
 ```
-{{/with}}
+{{/each}}
 
-System will notify on completion. Continue other work or wait.
+### 📋 Session Quick Links
+| Story | Dev Session |
+|-------|-------------|
+{{#each active_agents}}
+| **{{story_key}}** | `{{session_id}}` |
+{{/each}}
 </output>
 
 <action>Wait for background_task_completed notifications</action>

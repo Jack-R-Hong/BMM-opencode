@@ -41,6 +41,12 @@ This document provides the complete epic and story breakdown for {{project_name}
 
 ### Story {{N}}.{{M}}: {{story_title_N_M}}
 
+<!-- Optional: declare dependencies on other stories within this epic -->
+<!-- depends_on: [] means no dependencies (can start immediately) -->
+<!-- depends_on: [N.X, N.Y] means this story requires stories N.X and N.Y to be done first -->
+<!-- If omitted, sprint-planning will auto-infer dependencies based on story order -->
+**Depends On:** {{depends_on_list_or_none}}
+
 As a {{user_type}},
 I want {{capability}},
 So that {{value_benefit}}.
