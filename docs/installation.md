@@ -14,8 +14,8 @@ https://raw.githubusercontent.com/Jack-R-Hong/BMM-opencode/refs/heads/main/docs/
 Welcome! You're about to install **BMM-OpenCode** - BMAD-METHOD agents and skills for OpenCode.
 
 This gives your user access to:
-- **17 Specialized Agents** (Product Manager, Architect, Developer, QA, etc.)
-- **61 Workflow Skills** (PRD creation, architecture design, sprint planning, etc.)
+- **19 Specialized Agents** (Product Manager, Architect, Developer, QA, etc.)
+- **62 Workflow Skills** (PRD creation, architecture design, sprint planning, etc.)
 
 ### Step 0: Check Prerequisites
 
@@ -83,7 +83,7 @@ After restart, verify the plugin is loaded:
 Use bmm_list to verify installation
 ```
 
-You should see 17 agents and 61 skills listed.
+You should see 19 agents and 62 skills listed.
 
 ### Step 4: Install Agents & Skills
 
@@ -123,13 +123,13 @@ After restart, verify everything is working:
    - `bmm-pm` (Product Manager)
    - `bmm-architect` (System Architect)
    - `bmm-dev` (Developer)
-   - And 14 more...
+   - And 16 more...
 
 2. **Check skills**: Type `/bmad-` to see available slash commands like:
    - `/bmad-bmm-create-prd`
    - `/bmad-bmm-create-architecture`
    - `/bmad-bmm-dev-story`
-   - And 58 more...
+   - And 59 more...
 
 ### Available Tools
 
@@ -146,7 +146,7 @@ After installation, the plugin provides these tools:
 
 Tell the user:
 
-> **Installation Complete!** You now have access to 17 specialized agents and 61 workflow skills.
+> **Installation Complete!** You now have access to 19 specialized agents and 62 workflow skills.
 >
 > **Quick Start:**
 > - Press `Tab` to switch agents
@@ -168,11 +168,11 @@ Tell the user:
 ### Agents not showing in Tab menu?
 
 1. Verify installation: `ls ~/.config/opencode/agents/` (or `.opencode/agents/`)
-2. Should see 17 `.md` files
+2. Should see 19 `.md` files
 3. Restart OpenCode
 
 ### Skills not available as slash commands?
 
 1. Verify installation: `ls ~/.config/opencode/skills/` (or `.opencode/skills/`)
-2. Should see 61 directories
+2. Should see 62 directories
 3. Restart OpenCode
