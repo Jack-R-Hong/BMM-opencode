@@ -6,7 +6,7 @@ Paste this into your LLM agent session:
 
 ```
 Upgrade bmm-opencode by following the instructions here:
-https://raw.githubusercontent.com/Jack-R-Hong/BMM-opencode/main/docs/upgrade.md
+https://raw.githubusercontent.com/Jack-R-Hong/BMM-opencode/refs/heads/main/docs/upgrade.md
 ```
 
 ---

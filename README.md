@@ -145,7 +145,7 @@ Paste this into your LLM agent session:
 
 ```
 Upgrade bmm-opencode by following the instructions here:
-https://raw.githubusercontent.com/Jack-R-Hong/BMM-opencode/main/docs/upgrade.md
+https://raw.githubusercontent.com/Jack-R-Hong/BMM-opencode/refs/heads/main/docs/upgrade.md
 ```
 
 ### For LLM Agents
@@ -153,25 +153,10 @@ https://raw.githubusercontent.com/Jack-R-Hong/BMM-opencode/main/docs/upgrade.md
 Fetch the upgrade guide and follow it:
 
 ```bash
-curl -s https://raw.githubusercontent.com/Jack-R-Hong/BMM-opencode/main/docs/upgrade.md
+curl -s https://raw.githubusercontent.com/Jack-R-Hong/BMM-opencode/refs/heads/main/docs/upgrade.md
 ```
 
-### Quick Upgrade
-
-```bash
-# 1. Update opencode.json to use latest version
-# 2. Restart OpenCode
-# 3. Run via LLM:
-bmm_install({ force: true })
-```
-
-### Full Upgrade Guide
-
-See **[docs/upgrade.md](docs/upgrade.md)** for:
-- Detailed upgrade methods
-- Version history
-- Troubleshooting
-- Rollback instructions
+---
 
 ### Version History
 
