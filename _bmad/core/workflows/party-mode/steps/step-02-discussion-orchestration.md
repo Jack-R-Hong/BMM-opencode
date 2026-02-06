@@ -114,9 +114,12 @@ Allow natural back-and-forth within the same response round for dynamic interact
 
 ### 6. Response Round Completion
 
-After generating all agent responses for the round, let the user know he can speak naturally with the agents, an then show this menu opion"
+After generating all agent responses for the round, let the user know he can speak naturally with the agents, and then show these menu options:
 
-`[E] Exit Party Mode - End the collaborative session`
+```
+[R] Generate Meeting Report - Save summary or detailed report to file
+[E] Exit Party Mode - End the collaborative session
+```
 
 ### 7. Exit Condition Checking
 
@@ -132,9 +135,54 @@ Check for exit conditions before continuing:
 - Conversation seems naturally concluding
 - Confirm if the user wants to exit party mode and go back to where they were or continue chatting. Do it in a conversational way with an agent in the party.
 
-### 8. Handle Exit Selection
+### 8. Handle Menu Selection
+
+#### If 'R' (Generate Meeting Report):
+
+Ask user to choose report format:
+
+```
+📝 **Generate Meeting Report**
+
+Choose report format:
+- [S] **Summary** - Executive summary with key decisions and action items (~1 page)
+- [D] **Detailed** - Full meeting minutes with all agent contributions, discussion threads, and decision rationale (~3-5 pages)
+```
+
+**Summary Report** (when user selects S): Generate a concise report containing:
+- Meeting metadata (date, topic, participants, duration)
+- Executive summary (2-3 sentences)
+- Key decisions table (decision, rationale, owner)
+- Action items table (action, owner, priority)
+- Open questions list
+- Next steps
+
+**Detailed Report** (when user selects D): Generate a comprehensive report containing:
+- All summary report content PLUS:
+- Full discussion timeline with each agent's complete contributions per round
+- Consensus points and divergent views analysis
+- Decision log with proposer and supporters
+- Risks and their suggested resolutions
+- Agent roster with key contribution summary
+
+**File Output:**
+- Save as markdown file using the write tool
+- Path: `{output_folder}/meeting-reports/meeting-report-{YYYY-MM-DD-HHmm}.md`
+- Create the `meeting-reports` directory if it does not exist
+- After saving, display: `✅ Meeting report saved to: {file_path}`
+- Return to discussion (do NOT exit party mode)
 
 #### If 'E' (Exit Party Mode):
+
+Before exiting, ask:
+```
+📝 Before we wrap up — would you like to generate a meeting report?
+- [S] Summary Report
+- [D] Detailed Report  
+- [N] No thanks, just exit
+```
+
+If user selects S or D, generate and save the report file (same format as above), then proceed to exit.
 
 - Read fully and follow: `./step-03-graceful-exit.md`
 
@@ -144,7 +192,7 @@ Check for exit conditions before continuing:
 ✅ Authentic in-character responses maintained consistently
 ✅ Natural cross-talk and agent interactions enabled
 ✅ Question handling protocol followed correctly
-✅ [E] exit option presented after each response round
+✅ [R] report and [E] exit options presented after each response round
 ✅ Conversation context and state maintained throughout
 ✅ Graceful conversation flow without abrupt interruptions
 
@@ -182,6 +230,6 @@ Check for exit conditions before continuing:
 
 ## NEXT STEP:
 
-When user selects 'E' or exit conditions are met, load `./step-03-graceful-exit.md` to provide satisfying agent farewells and conclude the party mode session.
+When user selects 'R', generate meeting report and save to file. When user selects 'E' or exit conditions are met, offer report generation, then load `./step-03-graceful-exit.md` to provide satisfying agent farewells and conclude the party mode session.
 
 Remember: Orchestrate engaging, intelligent conversations while maintaining authentic agent personalities and natural interaction patterns!

@@ -365,6 +365,7 @@ Provide your expert perspective on this topic. Think deeply and thoroughly.
 - `deep [topic]` - Deep dive on specific topic
 - `vote [options]` - Get agent votes on decision
 - `summarize` - Get executive summary
+- `report` - End meeting and generate summary report file (choose summary or detailed)
 - `exit` - End meeting
 ```
 
@@ -479,6 +480,7 @@ meeting_state:
 | `attendees` | Show current participants | |
 | `summarize` | Executive summary | |
 | `actions` | List action items | |
+| `report` | End meeting + generate report file | `report`, `report summary`, `report detailed` |
 | `exit` / `end` | End meeting | |
 
 ---
@@ -560,9 +562,167 @@ for task_id in active_tasks:
 
 ---
 
+## Meeting Report Generation
+
+When user types `report`, or when exiting via `exit`/`end`:
+
+### Report Trigger Flow
+
+```
+User: report
+
+Response:
+📝 **Generate Meeting Report**
+
+Choose report format:
+- [S] **Summary** - Executive summary with key decisions and action items (~1 page)
+- [D] **Detailed** - Full meeting minutes with all agent contributions, discussion threads, and decision rationale (~3-5 pages)
+
+User: S (or D)
+
+Response:
+📄 Generating report...
+✅ Meeting report saved to: {output_folder}/meeting-reports/meeting-report-{YYYY-MM-DD-HHmm}.md
+```
+
+### Report File Structure
+
+**Summary Report** (`report` or `report summary`):
+
+```markdown
+# Meeting Report - {meeting_topic}
+
+**Date**: {date}
+**Duration**: {duration}
+**Participants**: {list of agent names with icons}
+**Facilitator**: Party Mode
+
+---
+
+## Executive Summary
+[2-3 sentence synthesis of the meeting]
+
+## Key Decisions
+| # | Decision | Rationale | Owner |
+|---|----------|-----------|-------|
+| 1 | [decision] | [why] | [agent] |
+
+## Action Items
+| # | Action | Owner | Priority | Deadline |
+|---|--------|-------|----------|----------|
+| 1 | [task] | [agent] | 🔴/🟡/🟢 | [if discussed] |
+
+## Open Questions
+- [unresolved question 1]
+- [unresolved question 2]
+
+## Next Steps
+- [recommended follow-up 1]
+- [recommended follow-up 2]
+```
+
+**Detailed Report** (`report detailed`):
+
+```markdown
+# Meeting Report - {meeting_topic}
+
+**Date**: {date}
+**Duration**: {duration}
+**Participants**: {list of agent names with icons and titles}
+**Facilitator**: Party Mode
+**Discussion Rounds**: {count}
+
+---
+
+## Executive Summary
+[2-3 sentence synthesis of the meeting]
+
+## Meeting Agenda & Context
+[Original meeting topic and background provided by user]
+
+## Discussion Timeline
+
+### Round 1: [Topic/Question]
+**Participants**: [agents involved]
+
+#### {icon} {Agent Name} ({title})
+[Full contribution from this agent]
+
+#### {icon} {Agent Name} ({title})
+[Full contribution from this agent]
+
+**Round Outcome**: [What was concluded in this round]
+
+---
+
+### Round 2: [Topic/Question]
+[... same structure for each discussion round ...]
+
+---
+
+## Synthesis
+
+### ✅ Consensus Points
+- [What agents agreed on, with supporting agents listed]
+
+### ⚠️ Divergent Views
+| Topic | Perspective A | Perspective B | Resolution |
+|-------|--------------|--------------|------------|
+| [topic] | {Agent}: [view] | {Agent}: [view] | [how resolved or still open] |
+
+### Decision Log
+| # | Decision | Rationale | Proposed By | Supported By |
+|---|----------|-----------|-------------|-------------|
+| 1 | [decision] | [reasoning] | [agent] | [agents] |
+
+## Action Items
+| # | Action | Owner | Priority | Deadline | Context |
+|---|--------|-------|----------|----------|---------|
+| 1 | [task] | [agent] | 🔴/🟡/🟢 | [if discussed] | [brief context] |
+
+## Open Questions & Risks
+| # | Question/Risk | Raised By | Impact | Suggested Resolution |
+|---|--------------|-----------|--------|---------------------|
+| 1 | [question] | [agent] | [impact] | [suggestion] |
+
+## Recommendations for Follow-up
+- [Specific follow-up with recommended agents]
+
+## Appendix: Agent Roster
+| Agent | Title | Key Contribution |
+|-------|-------|-----------------|
+| {icon} {name} | {title} | [one-line summary] |
+```
+
+### Report Generation Rules
+
+1. **On `report` command**: Ask user to choose Summary [S] or Detailed [D]
+2. **On `report summary`**: Generate summary report directly
+3. **On `report detailed`**: Generate detailed report directly
+4. **On `exit`/`end`**: Ask "Would you like to generate a meeting report before ending? [S] Summary / [D] Detailed / [N] No, just exit"
+5. **File output**: Use `write` tool to save the report as a markdown file
+6. **File path**: `{output_folder}/meeting-reports/meeting-report-{YYYY-MM-DD-HHmm}.md` (create directory if needed)
+7. **After report saved**: Show the file path and then proceed with exit if triggered by exit command
+
+---
+
 ## Graceful Exit
 
 When user types `exit`, `end`, or `goodbye`:
+
+**Step 1: Offer report generation**
+
+```
+📝 Before we wrap up — would you like to generate a meeting report?
+
+- [S] **Summary Report** - Key decisions + action items (~1 page)
+- [D] **Detailed Report** - Full meeting minutes with all contributions (~3-5 pages)
+- [N] **No thanks** - Just end the meeting
+```
+
+**Step 2: Generate report if requested** (see Meeting Report Generation section above)
+
+**Step 3: Show meeting conclusion**
 
 ```
 ## 🎊 Meeting Concluded
@@ -572,6 +732,7 @@ When user types `exit`, `end`, or `goodbye`:
 - **Duration**: {duration}
 - **Participants**: {list of agents}
 - **Discussion Rounds**: {count}
+- **Report**: {file path if generated, or "Not generated"}
 
 ### Key Decisions Made
 1. [decision 1]
@@ -592,8 +753,7 @@ When user types `exit`, `end`, or `goodbye`:
 
 ---
 
-Thank you for using Party Mode! 
-Meeting notes can be saved with `save [filename]`.
+Thank you for using Party Mode! 🎉
 ```
 
 ---

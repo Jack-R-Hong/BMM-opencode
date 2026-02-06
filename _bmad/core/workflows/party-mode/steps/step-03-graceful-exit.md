@@ -70,6 +70,14 @@ Briefly acknowledge key discussion outcomes:
 **Session Recognition:**
 "**Session Highlights:** Today we explored [main topic] through [number] different perspectives, generating valuable insights on [key outcomes]. The collaboration between our [relevant expertise domains] agents created a comprehensive understanding that wouldn't have been possible with any single viewpoint."
 
+### 3.5 Meeting Report Reference
+
+If a meeting report was generated during the session (via `[R]` command or exit prompt):
+
+"📄 **Meeting Report**: Your meeting report has been saved to `{report_file_path}`"
+
+If no report was generated, skip this section (the report prompt was already handled in step-02 before reaching this exit step).
+
 ### 4. Final Party Mode Conclusion
 
 End with enthusiastic and appreciative closure:
@@ -124,6 +132,7 @@ Thank you for using BMAD Party Mode for collaborative multi-agent discussions!"
 ✅ Frontmatter properly updated with workflow completion
 ✅ All workflow state cleaned up appropriately
 ✅ User left with positive impression of collaborative experience
+✅ Meeting report file path referenced if report was generated
 
 ## FAILURE MODES:
 

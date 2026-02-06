@@ -169,11 +169,19 @@ Exit party mode when user message contains any exit triggers:
 
 - `*exit`, `goodbye`, `end party`, `quit`
 
+### Report Generation
+
+Users can generate a meeting report at any time or when exiting:
+
+- `report` command during meeting → choose Summary or Detailed → save to file → continue meeting
+- On exit → prompt for report generation before concluding
+
 ### Graceful Conclusion
 
 If conversation naturally concludes:
 
 - Ask user if they'd like to continue or end party mode
+- Offer meeting report generation before exit
 - Exit gracefully when user indicates completion
 
 ---
