@@ -1,10 +1,21 @@
 # BMM-OpenCode
 
+[![npm version](https://img.shields.io/npm/v/bmm-opencode.svg)](https://www.npmjs.com/package/bmm-opencode)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 BMAD-METHOD agents and skills converted for [OpenCode](https://opencode.ai) - ready-to-use AI agent plugins.
 
-## Installation
+BMAD-METHOD 的 agents 和 skills，已轉換為 [OpenCode](https://opencode.ai) 格式 - 即裝即用的 AI agent 插件。
 
-### Via npm (in opencode.json)
+---
+
+## Installation 安裝
+
+### Method 1: Via npm plugin (Recommended 推薦)
+
+Add `bmm-opencode` to your `opencode.json` config file:
+
+將 `bmm-opencode` 加入你的 `opencode.json` 設定檔：
 
 ```json
 {
@@ -13,15 +24,49 @@ BMAD-METHOD agents and skills converted for [OpenCode](https://opencode.ai) - re
 }
 ```
 
-### Via local installation
+That's it! OpenCode will automatically download and install the plugin.
+
+就這樣！OpenCode 會自動下載並安裝插件。
+
+### Method 2: Via git clone (Manual 手動安裝)
 
 ```bash
-# Clone the repository
+# Clone the repository 複製倉庫
 git clone https://github.com/Jack-R-Hong/BMM-opencode.git
 
-# Copy to your project
-cp -r BMM-opencode/.opencode your-project/.opencode
+# Copy .opencode folder to your project 複製 .opencode 資料夾到你的專案
+cp -r BMM-opencode/.opencode /path/to/your-project/.opencode
 ```
+
+### Method 3: Via npm download (Manual 手動安裝)
+
+```bash
+# Download the package 下載套件
+npm pack bmm-opencode
+
+# Extract and copy 解壓並複製
+tar -xzf bmm-opencode-*.tgz
+cp -r package/.opencode /path/to/your-project/.opencode
+
+# Clean up 清理
+rm -rf package bmm-opencode-*.tgz
+```
+
+---
+
+## Quick Start 快速開始
+
+After installation, restart OpenCode and you'll have access to:
+
+安裝後重啟 OpenCode，你就可以使用：
+
+1. **17 Specialized Agents** - Switch agents using `Tab` key
+   
+   **17 個專業 Agent** - 使用 `Tab` 鍵切換 agent
+
+2. **61 Workflow Skills** - Load skills via slash commands like `/bmad-bmm-create-prd`
+   
+   **61 個工作流程 Skill** - 透過斜線命令載入 skill，如 `/bmad-bmm-create-prd`
 
 ## What's Included
 
