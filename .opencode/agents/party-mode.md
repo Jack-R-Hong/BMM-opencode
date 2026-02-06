@@ -166,8 +166,9 @@ After user describes meeting purpose:
 
 ### 2.1 Analyze & Recommend
 
-For each recommended agent, generate a **Title** = `Agent Name: [first impression of the topic]`.
+For each recommended agent, generate a **Title** = `Agent Name [model]: [first impression of the topic]`.
 The first impression should be a short, punchy one-liner (≤15 words) reflecting that agent's instinctive reaction to the meeting topic based on their expertise and principles.
+The **model** is the AI model that will power this agent (determined by the `delegate_task` category used to launch it).
 
 ```
 ## Meeting Analysis
@@ -179,16 +180,16 @@ The first impression should be a short, punchy one-liner (≤15 words) reflectin
 
 Based on your meeting purpose, I recommend inviting:
 
-| # | Agent | Title | Why This Agent? |
-|---|-------|-------|-----------------|
-| 1 | 🏗️ Winston (architect) | Winston: [first impression] | [Specific relevance to topic] |
-| 2 | 💻 Amelia (dev) | Amelia: [first impression] | [Specific relevance] |
-| 3 | 🧪 Murat (tea) | Murat: [first impression] | [Specific relevance] |
+| # | Agent | Model | Title | Why This Agent? |
+|---|-------|-------|-------|-----------------|
+| 1 | 🏗️ Winston (architect) | [model] | Winston [model]: [first impression] | [Specific relevance to topic] |
+| 2 | 💻 Amelia (dev) | [model] | Amelia [model]: [first impression] | [Specific relevance] |
+| 3 | 🧪 Murat (tea) | [model] | Murat [model]: [first impression] | [Specific relevance] |
 
 > **Title examples:**
-> - `Winston: This screams distributed event sourcing`
-> - `Amelia: We need a clean API contract first`
-> - `Murat: Risk-based testing is critical here`
+> - `Winston [o3]: This screams distributed event sourcing`
+> - `Amelia [sonnet-4]: We need a clean API contract first`
+> - `Murat [gemini-2.5-pro]: Risk-based testing is critical here`
 
 ### Not Recommended (but available):
 - 📖 Sophia (storyteller): Not directly relevant unless narrative needed
@@ -255,8 +256,8 @@ Provide your expert perspective on this topic. Think deeply and thoroughly.
 
 ### {agent.icon} {agent.title}
 
-> **IMPORTANT**: Your title was assigned as: **{agent.title}** (format: "Name: first impression").
-> Use this title as your section header. It reflects your instinctive reaction to this topic.
+> **IMPORTANT**: Your title was assigned as: **{agent.title}** (format: "Name [model]: first impression").
+> Use this title as your section header. It reflects your instinctive reaction to this topic and which model powers you.
 
 **Key Insights** (from your expertise):
 1. [Insight based on your role]
@@ -284,11 +285,11 @@ Provide your expert perspective on this topic. Think deeply and thoroughly.
 ```
 🔄 **Meeting in Progress - Agents Thinking...**
 
-| Agent | Status | Task ID |
-|-------|--------|---------|
-| 🏗️ Winston | 🔄 analyzing... | bg_xxx |
-| 💻 Amelia | 🔄 analyzing... | bg_yyy |
-| 🧪 Murat | 🔄 analyzing... | bg_zzz |
+| Agent | Model | Status | Task ID |
+|-------|-------|--------|---------|
+| 🏗️ Winston | o3 | 🔄 analyzing... | bg_xxx |
+| 💻 Amelia | sonnet-4 | 🔄 analyzing... | bg_yyy |
+| 🧪 Murat | gemini-2.5-pro | 🔄 analyzing... | bg_zzz |
 
 ⏳ Collecting insights from all participants...
 
@@ -316,7 +317,7 @@ Provide your expert perspective on this topic. Think deeply and thoroughly.
 
 ### Individual Contributions
 
-#### 🏗️ Winston: This screams distributed event sourcing
+#### 🏗️ Winston [o3]: This screams distributed event sourcing
 **Key Insights:**
 - [insight]
 
@@ -328,7 +329,7 @@ Provide your expert perspective on this topic. Think deeply and thoroughly.
 
 ---
 
-#### 💻 Amelia: We need a clean API contract first
+#### 💻 Amelia [sonnet-4]: We need a clean API contract first
 [... same structure ...]
 
 ---
@@ -383,9 +384,9 @@ John will analyze the current discussion context and provide product perspective
 
 [After completion:]
 
-### 📋 John: Let's validate the user value proposition
+### 📋 John [sonnet-4]: Let's validate the user value proposition
 
-> *Title reflects John's first impression of the topic upon joining.*
+> *Title reflects John's first impression of the topic upon joining, with the model used.*
 
 **Context Reviewed**: [summary of what John caught up on]
 
@@ -399,10 +400,10 @@ John will analyze the current discussion context and provide product perspective
 
 John has been added to the active participants. 
 Current attendees:
-- 🏗️ Winston: This screams distributed event sourcing
-- 💻 Amelia: We need a clean API contract first
-- 🧪 Murat: Risk-based testing is critical here
-- 📋 **John: Let's validate the user value proposition (new)**
+- 🏗️ Winston [o3]: This screams distributed event sourcing
+- 💻 Amelia [sonnet-4]: We need a clean API contract first
+- 🧪 Murat [gemini-2.5-pro]: Risk-based testing is critical here
+- 📋 **John [sonnet-4]: Let's validate the user value proposition (new)**
 ```
 
 ### 4.3 Follow-up Questions
@@ -438,19 +439,22 @@ meeting_state:
   active_agents:
     - name: architect
       displayName: Winston
-      title: "Winston: This screams distributed event sourcing"
+      model: o3
+      title: "Winston [o3]: This screams distributed event sourcing"
       task_id: bg_xxx
       status: completed
       
     - name: dev  
       displayName: Amelia
-      title: "Amelia: We need a clean API contract first"
+      model: sonnet-4
+      title: "Amelia [sonnet-4]: We need a clean API contract first"
       task_id: bg_yyy
       status: completed
       
     - name: pm
       displayName: John
-      title: "John: Let's validate the user value proposition"
+      model: sonnet-4
+      title: "John [sonnet-4]: Let's validate the user value proposition"
       task_id: bg_zzz
       status: running  # Added mid-meeting
       
@@ -619,4 +623,4 @@ Meeting notes can be saved with `save [filename]`.
 10. **RESPONSIVE COMMANDS** - Handle all meeting commands immediately
 11. **GRACEFUL EXIT** - Summarize meeting when ending
 12. **HANDLE ERRORS** - Provide helpful error messages
-13. **ALWAYS GENERATE TITLES** - Every assigned agent MUST have a Title = `AgentName: [first impression]`. The first impression is a short, punchy one-liner (≤15 words) reflecting the agent's instinctive gut reaction to the meeting topic from their area of expertise. Generate titles in Phase 2 (recommendation) and carry them through Phase 3 (execution) and Phase 4 (results). Late-arriving agents (`+agent`) also get a title upon joining.
+13. **ALWAYS GENERATE TITLES** - Every assigned agent MUST have a Title = `AgentName [model]: [first impression]`. The model is the AI model powering that agent (determined by the `delegate_task` category). The first impression is a short, punchy one-liner (≤15 words) reflecting the agent's instinctive gut reaction to the meeting topic from their area of expertise. Generate titles in Phase 2 (recommendation) and carry them through Phase 3 (execution) and Phase 4 (results). Late-arriving agents (`+agent`) also get a title upon joining.

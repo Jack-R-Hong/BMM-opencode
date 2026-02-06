@@ -115,15 +115,16 @@ For each user message or topic:
 
 **Title Generation (MANDATORY):**
 
-Every selected agent MUST be assigned a **Title** = `AgentName: [first impression]`.
+Every selected agent MUST be assigned a **Title** = `AgentName [model]: [first impression]`.
+- The **model** is the AI model powering that agent (determined by the `delegate_task` category used to launch it)
 - The first impression is a short, punchy one-liner (≤15 words) reflecting the agent's instinctive gut reaction to the topic from their area of expertise
 - Generate titles when agents are first selected/recommended
 - Carry titles through all phases (selection → execution → results display)
 - Late-arriving agents (`+agent`) also get a title upon joining
 - Examples:
-  - `Winston: This screams distributed event sourcing`
-  - `Amelia: We need a clean API contract first`
-  - `Murat: Risk-based testing is critical here`
+  - `Winston [o3]: This screams distributed event sourcing`
+  - `Amelia [sonnet-4]: We need a clean API contract first`
+  - `Murat [gemini-2.5-pro]: Risk-based testing is critical here`
 
 **Priority Handling:**
 
