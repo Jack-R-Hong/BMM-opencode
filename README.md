@@ -33,14 +33,14 @@ curl -s https://raw.githubusercontent.com/Jack-R-Hong/BMM-opencode/refs/heads/ma
 After installation, you have access to:
 
 1. **Plugin Tools** - Use `bmm_list`, `bmm_agent`, `bmm_skill` directly
-2. **17 Specialized Agents** - After `bmm_install`, switch agents using `Tab` key
+2. **19 Specialized Agents** - After `bmm_install`, switch agents using `Tab` key
 3. **61 Workflow Skills** - After `bmm_install`, load skills via slash commands like `/bmad-bmm-create-prd`
 
 ---
 
 ## What's Included
 
-### Agents (17)
+### Agents (19)
 
 | Agent | Name | Role |
 |-------|------|------|
@@ -61,6 +61,8 @@ After installation, you have access to:
 | `cis-storyteller` | Sophia | Master Storyteller |
 | `core-bmad-master` | BMad Master | Workflow Orchestrator |
 | `tea-tea` | Murat | Test Architect |
+| `party-mode` | - | Multi-Agent Meeting Orchestrator |
+| `gen-subagent` | - | Agent Factory (generates new agents) |
 
 ### Skills (61)
 
@@ -132,6 +134,76 @@ Press `Tab` or use the agent switch keybind, then select an agent.
 ```
 Load the bmad-bmm-create-prd skill and help me create a PRD
 ```
+
+---
+
+## Update / Upgrade
+
+### Method 1: Update Plugin (Recommended)
+
+Update the npm package in your `opencode.json`:
+
+```json
+{
+  "mcp": {
+    "bmm": {
+      "type": "npm",
+      "package": "bmm-opencode@latest"
+    }
+  }
+}
+```
+
+Then restart OpenCode.
+
+### Method 2: Reinstall Agents & Skills
+
+If you've already run `bmm_install`, update the installed files:
+
+```
+Use bmm_install with force=true to overwrite existing agents and skills
+```
+
+Or via LLM:
+```
+bmm_install({ force: true })
+```
+
+This will:
+- Overwrite all agents in `.opencode/agents/`
+- Overwrite all skills in `.opencode/skills/`
+- Preserve any custom agents/skills you've created (if names don't conflict)
+
+### Method 3: Manual Update
+
+1. Check current version:
+   ```bash
+   npm list bmm-opencode
+   ```
+
+2. Update to latest:
+   ```bash
+   npm update bmm-opencode
+   ```
+
+3. Reinstall agents/skills:
+   ```
+   bmm_install({ force: true })
+   ```
+
+### Check for Updates
+
+```
+Use bmm_list to see the current version and available agents/skills
+```
+
+### Version History
+
+| Version | Changes |
+|---------|---------|
+| 1.2.0 | Added `party-mode` (multi-agent meetings) and `gen-subagent` (agent factory) |
+| 1.1.0 | Added bmad-opencode-converter integration |
+| 1.0.1 | Initial release with 17 agents, 61 skills |
 
 ---
 
