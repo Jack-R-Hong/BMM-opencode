@@ -1,6 +1,6 @@
 {
   "name": "bmm-opencode",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "BMAD-METHOD agents and skills for OpenCode - AI agent framework with 17 specialized agents and 61 workflow skills",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

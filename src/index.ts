@@ -3,6 +3,7 @@ import { tool } from "@opencode-ai/plugin/tool";
 import { readFileSync, readdirSync, existsSync, cpSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { homedir } from "os";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageRoot = join(__dirname, "..");
@@ -67,7 +68,8 @@ ${skills.map((s) => `- ${s}`).join("\n")}
 ## Usage
 - Use \`bmm_agent\` tool to get agent definition
 - Use \`bmm_skill\` tool to get skill instructions
-- Use \`bmm_install\` tool to copy agents/skills to your project`;
+- Use \`bmm_install\` with \`global=true\` to install globally (~/.config/opencode/)
+- Use \`bmm_install\` to install to current project (.opencode/)`;
         },
       }),
 
@@ -93,20 +95,43 @@ ${skills.map((s) => `- ${s}`).join("\n")}
 
       bmm_install: tool({
         description:
-          "Install BMM agents and skills to your project's .opencode directory",
+          "Install BMM agents and skills. Use global=true for ~/.config/opencode/ (all projects), or omit for current project's .opencode/",
         args: {
           target: tool.schema
             .string()
             .optional()
-            .describe("Target directory (defaults to current project)"),
+            .describe("Target directory (defaults to current project's .opencode/)"),
+          global: tool.schema
+            .boolean()
+            .optional()
+            .describe("Install to global ~/.config/opencode/ instead of project"),
+          force: tool.schema
+            .boolean()
+            .optional()
+            .describe("Overwrite existing files without warning (default: false)"),
         },
         async execute(args, context) {
-          const targetBase =
-            args.target || join(context.directory, ".opencode");
+          const globalConfigDir = join(homedir(), ".config", "opencode");
+          const targetBase = args.global
+            ? globalConfigDir
+            : args.target || join(context.directory, ".opencode");
 
           try {
             const targetAgents = join(targetBase, "agents");
             const targetSkills = join(targetBase, "skills");
+
+            const agentsExist = existsSync(targetAgents) && readdirSync(targetAgents).length > 0;
+            const skillsExist = existsSync(targetSkills) && readdirSync(targetSkills).length > 0;
+
+            if ((agentsExist || skillsExist) && !args.force) {
+              const existing = [];
+              if (agentsExist) existing.push(`agents (${readdirSync(targetAgents).length} files)`);
+              if (skillsExist) existing.push(`skills (${readdirSync(targetSkills).length} dirs)`);
+              return `Existing installation detected at ${targetBase}:
+- ${existing.join("\n- ")}
+
+Use \`force=true\` to overwrite, or remove existing files first.`;
+            }
 
             mkdirSync(targetAgents, { recursive: true });
             mkdirSync(targetSkills, { recursive: true });
@@ -127,7 +152,8 @@ ${skills.map((s) => `- ${s}`).join("\n")}
               skillsCopied++;
             }
 
-            return `Successfully installed BMM-OpenCode to ${targetBase}:
+            const installType = args.global ? "globally" : "to project";
+            return `Successfully installed BMM-OpenCode ${installType} (${targetBase}):
 - ${agentsCopied} agents copied to ${targetAgents}
 - ${skillsCopied} skills copied to ${targetSkills}
 

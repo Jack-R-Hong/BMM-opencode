@@ -9,58 +9,22 @@ BMAD-METHOD agents and skills converted for [OpenCode](https://opencode.ai) - re
 
 ## Installation
 
-### Plugin Install (Recommended)
+### For Humans
 
-Add `bmm-opencode` to your `opencode.json`:
-
-```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "plugin": ["bmm-opencode"]
-}
-```
-
-Restart OpenCode. The plugin provides these tools:
-
-| Tool | Description |
-|------|-------------|
-| `bmm_list` | List all available agents and skills |
-| `bmm_agent` | Get agent definition by name |
-| `bmm_skill` | Get skill instructions by name |
-| `bmm_install` | Copy agents/skills to your project's `.opencode` folder |
-
-### Installing Agents & Skills to Your Project
-
-After adding the plugin, run:
+Paste this into your LLM agent session:
 
 ```
-Use the bmm_install tool to install agents and skills
+Install and configure bmm-opencode by following the instructions here:
+https://raw.githubusercontent.com/Jack-R-Hong/BMM-opencode/refs/heads/main/docs/installation.md
 ```
 
-This copies all 17 agents and 61 skills to your project's `.opencode/` directory. Restart OpenCode to use them with Tab switching and slash commands.
+### For LLM Agents
 
----
-
-<details>
-<summary><b>Alternative: Manual Installation</b></summary>
-
-#### Via git clone
+Fetch the installation guide and follow it:
 
 ```bash
-git clone https://github.com/Jack-R-Hong/BMM-opencode.git
-cp -r BMM-opencode/.opencode /path/to/your-project/.opencode
+curl -s https://raw.githubusercontent.com/Jack-R-Hong/BMM-opencode/refs/heads/main/docs/installation.md
 ```
-
-#### Via npm pack
-
-```bash
-npm pack bmm-opencode
-tar -xzf bmm-opencode-*.tgz
-cp -r package/.opencode /path/to/your-project/.opencode
-rm -rf package bmm-opencode-*.tgz
-```
-
-</details>
 
 ---
 
