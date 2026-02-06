@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "cis"
   workflow: "innovation-strategy"
-  standalone: "true"
+  standalone: true
 ---
 
 # innovation-strategy Workflow

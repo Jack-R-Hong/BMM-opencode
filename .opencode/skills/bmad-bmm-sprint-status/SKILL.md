@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "bmm"
   workflow: "sprint-status"
-  standalone: "false"
+  standalone: false
 ---
 
 # sprint-status Workflow

@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "bmm"
   workflow: "qa-automate"
-  standalone: "false"
+  standalone: false
 ---
 
 # qa-automate Workflow

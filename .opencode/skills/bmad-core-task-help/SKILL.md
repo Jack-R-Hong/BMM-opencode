@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "core"
   task: "help"
-  standalone: "true"
+  standalone: true
 ---
 
 # help

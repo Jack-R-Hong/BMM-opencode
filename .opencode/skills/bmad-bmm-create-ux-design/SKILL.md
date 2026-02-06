@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "bmm"
   workflow: "create-ux-design"
-  standalone: "false"
+  standalone: false
 ---
 
 # create-ux-design Workflow

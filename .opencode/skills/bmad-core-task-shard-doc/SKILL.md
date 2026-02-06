@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "core"
   task: "shard-doc"
-  standalone: "true"
+  standalone: true
 ---
 
 # Shard Document

@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "bmm"
   workflow: "domain-research"
-  standalone: "false"
+  standalone: false
 ---
 
 # domain-research Workflow

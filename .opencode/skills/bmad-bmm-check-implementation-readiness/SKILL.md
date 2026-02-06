@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "bmm"
   workflow: "check-implementation-readiness"
-  standalone: "false"
+  standalone: false
 ---
 
 # check-implementation-readiness Workflow

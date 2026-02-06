@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "core"
   task: "index-docs"
-  standalone: "true"
+  standalone: true
 ---
 
 # Index Docs

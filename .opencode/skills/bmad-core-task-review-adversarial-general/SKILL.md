@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "core"
   task: "review-adversarial-general"
-  standalone: "true"
+  standalone: true
 ---
 
 # Adversarial Review (General)

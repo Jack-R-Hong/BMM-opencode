@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "core"
   workflow: "brainstorming"
-  standalone: "false"
+  standalone: false
 ---
 
 # brainstorming Workflow

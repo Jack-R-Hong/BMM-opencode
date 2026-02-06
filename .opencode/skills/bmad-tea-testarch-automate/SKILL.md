@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "tea"
   workflow: "testarch-automate"
-  standalone: "false"
+  standalone: false
 ---
 
 # testarch-automate Workflow

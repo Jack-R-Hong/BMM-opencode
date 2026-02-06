@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "tea"
   workflow: "testarch-trace"
-  standalone: "false"
+  standalone: false
 ---
 
 # testarch-trace Workflow

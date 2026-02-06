@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "core"
   task: "editorial-review-structure"
-  standalone: "true"
+  standalone: true
 ---
 
 # Editorial Review - Structure

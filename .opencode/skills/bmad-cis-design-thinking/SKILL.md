@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "cis"
   workflow: "design-thinking"
-  standalone: "true"
+  standalone: true
 ---
 
 # design-thinking Workflow

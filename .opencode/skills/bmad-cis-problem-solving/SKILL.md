@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "cis"
   workflow: "problem-solving"
-  standalone: "true"
+  standalone: true
 ---
 
 # problem-solving Workflow

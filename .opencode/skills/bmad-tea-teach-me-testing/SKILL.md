@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "tea"
   workflow: "teach-me-testing"
-  standalone: "false"
+  standalone: false
 ---
 
 # teach-me-testing Workflow

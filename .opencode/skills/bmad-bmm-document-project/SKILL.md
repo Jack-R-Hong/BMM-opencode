@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "bmm"
   workflow: "document-project"
-  standalone: "false"
+  standalone: false
 ---
 
 # document-project Workflow

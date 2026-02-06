@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "core"
   workflow: "party-mode"
-  standalone: "false"
+  standalone: false
 ---
 
 # party-mode Workflow
@@ -112,6 +112,18 @@ For each user message or topic:
 - Identify which agents would naturally contribute based on their role, capabilities, and principles
 - Consider conversation context and previous agent contributions
 - Select 2-3 most relevant agents for balanced perspective
+
+**Title Generation (MANDATORY):**
+
+Every selected agent MUST be assigned a **Title** = `AgentName: [first impression]`.
+- The first impression is a short, punchy one-liner (≤15 words) reflecting the agent's instinctive gut reaction to the topic from their area of expertise
+- Generate titles when agents are first selected/recommended
+- Carry titles through all phases (selection → execution → results display)
+- Late-arriving agents (`+agent`) also get a title upon joining
+- Examples:
+  - `Winston: This screams distributed event sourcing`
+  - `Amelia: We need a clean API contract first`
+  - `Murat: Risk-based testing is critical here`
 
 **Priority Handling:**
 

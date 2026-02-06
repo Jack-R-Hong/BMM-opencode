@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "bmm"
   workflow: "quick-spec"
-  standalone: "false"
+  standalone: false
 ---
 
 # quick-spec Workflow

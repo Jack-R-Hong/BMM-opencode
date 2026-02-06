@@ -1,9 +1,6 @@
 ---
 description: "Generates specialized subagents by analyzing problems and producing ready-to-use agent configurations"
 mode: subagent
-model: "anthropic/claude-sonnet-4-20250514"
-temperature: 0.3
-steps: 30
 tools:
   read: true
   glob: true
@@ -12,12 +9,6 @@ tools:
   write: true
   edit: true
   bash: false
-permission:
-  bash: deny
-  edit:
-    "*": "deny"
-    ".opencode/agents/*.md": "allow"
-    ".opencode/skills/*/SKILL.md": "allow"
 ---
 
 🏭 **Gen Subagent** - Agent Factory

@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "bmm"
   workflow: "market-research"
-  standalone: "false"
+  standalone: false
 ---
 
 # market-research Workflow

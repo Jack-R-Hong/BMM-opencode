@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "bmm"
   workflow: "technical-research"
-  standalone: "false"
+  standalone: false
 ---
 
 # technical-research Workflow

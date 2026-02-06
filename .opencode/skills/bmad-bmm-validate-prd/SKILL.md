@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "bmm"
   workflow: "validate-prd"
-  standalone: "false"
+  standalone: false
 ---
 
 # validate-prd Workflow

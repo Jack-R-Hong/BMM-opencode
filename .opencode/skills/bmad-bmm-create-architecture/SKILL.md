@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "bmm"
   workflow: "create-architecture"
-  standalone: "false"
+  standalone: false
 ---
 
 # create-architecture Workflow

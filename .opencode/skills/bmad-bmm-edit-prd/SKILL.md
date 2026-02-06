@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "bmm"
   workflow: "edit-prd"
-  standalone: "false"
+  standalone: false
 ---
 
 # edit-prd Workflow

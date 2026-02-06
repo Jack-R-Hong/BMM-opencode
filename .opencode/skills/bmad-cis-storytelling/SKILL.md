@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "cis"
   workflow: "storytelling"
-  standalone: "true"
+  standalone: true
 ---
 
 # storytelling Workflow

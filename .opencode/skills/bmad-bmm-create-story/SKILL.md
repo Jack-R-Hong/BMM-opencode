@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "bmm"
   workflow: "create-story"
-  standalone: "false"
+  standalone: false
 ---
 
 # create-story Workflow

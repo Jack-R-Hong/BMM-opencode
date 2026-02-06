@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "bmm"
   workflow: "code-review"
-  standalone: "false"
+  standalone: false
 ---
 
 # code-review Workflow

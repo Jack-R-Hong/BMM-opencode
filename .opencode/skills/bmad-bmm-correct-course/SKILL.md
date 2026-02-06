@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "bmm"
   workflow: "correct-course"
-  standalone: "false"
+  standalone: false
 ---
 
 # correct-course Workflow

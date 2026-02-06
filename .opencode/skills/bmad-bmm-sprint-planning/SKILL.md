@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "bmm"
   workflow: "sprint-planning"
-  standalone: "false"
+  standalone: false
 ---
 
 # sprint-planning Workflow

@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "bmm"
   workflow: "generate-project-context"
-  standalone: "false"
+  standalone: false
 ---
 
 # generate-project-context Workflow

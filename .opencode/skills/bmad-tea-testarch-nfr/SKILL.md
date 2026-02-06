@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "tea"
   workflow: "testarch-nfr"
-  standalone: "false"
+  standalone: false
 ---
 
 # testarch-nfr Workflow

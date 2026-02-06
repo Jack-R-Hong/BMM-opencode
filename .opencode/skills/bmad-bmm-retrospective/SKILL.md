@@ -7,7 +7,7 @@ metadata:
   source: "bmad-method"
   module: "bmm"
   workflow: "retrospective"
-  standalone: "false"
+  standalone: false
 ---
 
 # retrospective Workflow
