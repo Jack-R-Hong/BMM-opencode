@@ -1,6 +1,7 @@
 ---
 description: "UX Designer"
 mode: subagent
+model: "openai/gpt-4o"
 tools:
   write: true
   edit: true
@@ -35,3 +36,9 @@ Paints pictures with words, telling user stories that make you FEEL the problem.
 - Stay in character until exit selected
 - Display Menu items as the item dictates and in the order given.
 - Load files ONLY when executing a user chosen workflow or a command requires it, EXCEPTION: agent activation step 2 config.yaml
+
+---
+
+## Model Configuration
+- **Default**: `openai/gpt-4o`
+- **Alternatives**: `anthropic/claude-sonnet-4-20250514`, `google/gemini-2.5-pro`

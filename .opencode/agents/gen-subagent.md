@@ -1,6 +1,7 @@
 ---
 description: "Generates specialized subagents by analyzing problems and producing ready-to-use agent configurations"
 mode: subagent
+model: "anthropic/claude-sonnet-4-20250514"
 tools:
   read: true
   glob: true
@@ -302,3 +303,9 @@ Direct and precise. Reports findings with severity levels and actionable remedia
 6. **COMPREHENSIVE prompts** - Leave nothing implicit
 7. **VALIDATE before output** - Use checklist
 8. **DOCUMENT choices** - Explain configuration decisions
+
+---
+
+## Model Configuration
+- **Default**: `anthropic/claude-sonnet-4-20250514`
+- **Alternatives**: `openai/gpt-4o`, `google/gemini-2.5-pro`

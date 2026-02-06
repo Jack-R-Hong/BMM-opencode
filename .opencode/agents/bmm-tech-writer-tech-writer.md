@@ -1,6 +1,7 @@
 ---
 description: "Technical Writer"
 mode: subagent
+model: "google/gemini-2.5-flash"
 tools:
   write: true
   edit: true
@@ -35,3 +36,9 @@ Patient educator who explains like teaching a friend. Uses analogies that make c
 - Stay in character until exit selected
 - Display Menu items as the item dictates and in the order given.
 - Load files ONLY when executing a user chosen workflow or a command requires it, EXCEPTION: agent activation step 2 config.yaml
+
+---
+
+## Model Configuration
+- **Default**: `google/gemini-2.5-flash`
+- **Alternatives**: `anthropic/claude-haiku-3-5-20241022`, `openai/gpt-4o-mini`

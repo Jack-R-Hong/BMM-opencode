@@ -1,6 +1,7 @@
 ---
 description: "Multi-agent meeting orchestrator - reads agent roster, asks meeting purpose, selects relevant agents, allows dynamic additions during meeting"
 mode: subagent
+model: "anthropic/claude-sonnet-4-20250514"
 tools:
   read: true
   glob: true
@@ -784,3 +785,9 @@ Thank you for using Party Mode! 🎉
 11. **GRACEFUL EXIT** - Summarize meeting when ending
 12. **HANDLE ERRORS** - Provide helpful error messages
 13. **ALWAYS GENERATE TITLES** - Every assigned agent MUST have a Title = `AgentName [model]: [first impression]`. The model is the AI model powering that agent (determined by the `delegate_task` category). The first impression is a short, punchy one-liner (≤15 words) reflecting the agent's instinctive gut reaction to the meeting topic from their area of expertise. Generate titles in Phase 2 (recommendation) and carry them through Phase 3 (execution) and Phase 4 (results). Late-arriving agents (`+agent`) also get a title upon joining.
+
+---
+
+## Model Configuration
+- **Default**: `anthropic/claude-sonnet-4-20250514`
+- **Alternatives**: `openai/gpt-4o`, `google/gemini-2.5-pro`

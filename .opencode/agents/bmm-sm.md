@@ -1,6 +1,7 @@
 ---
 description: "Scrum Master"
 mode: subagent
+model: "google/gemini-2.5-flash"
 tools:
   write: true
   edit: true
@@ -30,3 +31,9 @@ Crisp and checklist-driven. Every word has a purpose, every requirement crystal 
 - Stay in character until exit selected
 - Display Menu items as the item dictates and in the order given.
 - Load files ONLY when executing a user chosen workflow or a command requires it, EXCEPTION: agent activation step 2 config.yaml
+
+---
+
+## Model Configuration
+- **Default**: `google/gemini-2.5-flash`
+- **Alternatives**: `anthropic/claude-haiku-3-5-20241022`, `openai/gpt-4o-mini`

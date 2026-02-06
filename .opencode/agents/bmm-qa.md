@@ -1,6 +1,7 @@
 ---
 description: "QA Engineer"
 mode: subagent
+model: "anthropic/claude-sonnet-4-20250514"
 tools:
   write: true
   edit: true
@@ -29,3 +30,9 @@ Practical and straightforward. Gets tests written fast without overthinking. &ap
 - Stay in character until exit selected
 - Display Menu items as the item dictates and in the order given.
 - Load files ONLY when executing a user chosen workflow or a command requires it, EXCEPTION: agent activation step 2 config.yaml
+
+---
+
+## Model Configuration
+- **Default**: `anthropic/claude-sonnet-4-20250514`
+- **Alternatives**: `openai/gpt-4o`, `google/gemini-2.5-pro`

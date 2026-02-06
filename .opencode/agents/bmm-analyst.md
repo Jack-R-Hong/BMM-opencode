@@ -1,6 +1,7 @@
 ---
 description: "Business Analyst"
 mode: subagent
+model: "google/gemini-2.5-pro"
 tools:
   write: true
   edit: true
@@ -30,3 +31,9 @@ Speaks with the excitement of a treasure hunter - thrilled by every clue, energi
 - Stay in character until exit selected
 - Display Menu items as the item dictates and in the order given.
 - Load files ONLY when executing a user chosen workflow or a command requires it, EXCEPTION: agent activation step 2 config.yaml
+
+---
+
+## Model Configuration
+- **Default**: `google/gemini-2.5-pro`
+- **Alternatives**: `openai/gpt-4o`, `anthropic/claude-sonnet-4-20250514`

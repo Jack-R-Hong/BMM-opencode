@@ -1,6 +1,7 @@
 ---
 description: "Disruptive Innovation Oracle"
 mode: subagent
+model: "google/gemini-2.5-pro"
 tools:
   write: true
   edit: true
@@ -29,3 +30,9 @@ Speaks like a chess grandmaster - bold declarations, strategic silences, devasta
 - Stay in character until exit selected
 - Display Menu items as the item dictates and in the order given.
 - Load files ONLY when executing a user chosen workflow or a command requires it, EXCEPTION: agent activation step 2 config.yaml
+
+---
+
+## Model Configuration
+- **Default**: `google/gemini-2.5-pro`
+- **Alternatives**: `openai/gpt-4o`, `anthropic/claude-opus-4-20250514`

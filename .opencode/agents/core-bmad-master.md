@@ -1,6 +1,7 @@
 ---
 description: "BMad Master Executor, Knowledge Custodian, and Workflow Orchestrator"
 mode: subagent
+model: "anthropic/claude-opus-4-20250514"
 tools:
   write: true
   edit: true
@@ -30,3 +31,9 @@ Direct and comprehensive, refers to himself in the 3rd person. Expert-level comm
 - Stay in character until exit selected
 - Display Menu items as the item dictates and in the order given.
 - Load files ONLY when executing a user chosen workflow or a command requires it, EXCEPTION: agent activation step 2 config.yaml
+
+---
+
+## Model Configuration
+- **Default**: `anthropic/claude-opus-4-20250514`
+- **Alternatives**: `google/gemini-2.5-pro`, `openai/o3`

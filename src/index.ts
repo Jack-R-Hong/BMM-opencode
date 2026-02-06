@@ -68,6 +68,7 @@ function readBundledFiles(): { agents: OpenCodeAgent[]; skills: OpenCodeSkill[] 
           frontmatter: {
             description: frontmatter.description || "",
             mode: frontmatter.mode as "subagent" | undefined,
+            model: frontmatter.model || undefined,
             tools: frontmatter.tools,
           },
           prompt: body,
@@ -157,6 +158,7 @@ function writeAgentFile(targetDir: string, agent: OpenCodeAgent): void {
   const frontmatterLines = ["---"];
   frontmatterLines.push(`description: ${JSON.stringify(agent.frontmatter.description)}`);
   if (agent.frontmatter.mode) frontmatterLines.push(`mode: ${agent.frontmatter.mode}`);
+  if (agent.frontmatter.model) frontmatterLines.push(`model: ${JSON.stringify(agent.frontmatter.model)}`);
   if (agent.frontmatter.tools) {
     frontmatterLines.push("tools:");
     for (const [toolName, enabled] of Object.entries(agent.frontmatter.tools)) {
@@ -194,6 +196,7 @@ function formatAgentContent(agent: OpenCodeAgent): string {
   const frontmatterLines = ["---"];
   frontmatterLines.push(`description: ${JSON.stringify(agent.frontmatter.description)}`);
   if (agent.frontmatter.mode) frontmatterLines.push(`mode: ${agent.frontmatter.mode}`);
+  if (agent.frontmatter.model) frontmatterLines.push(`model: ${JSON.stringify(agent.frontmatter.model)}`);
   if (agent.frontmatter.tools) {
     frontmatterLines.push("tools:");
     for (const [toolName, enabled] of Object.entries(agent.frontmatter.tools)) {
