@@ -9,9 +9,9 @@ BMAD-METHOD agents and skills converted for [OpenCode](https://opencode.ai) - re
 
 ## Installation
 
-### One-Line Install (Recommended)
+### Plugin Install (Recommended)
 
-Simply add `bmm-opencode` to your `opencode.json`:
+Add `bmm-opencode` to your `opencode.json`:
 
 ```json
 {
@@ -20,7 +20,24 @@ Simply add `bmm-opencode` to your `opencode.json`:
 }
 ```
 
-**Done!** Restart OpenCode and all 17 agents + 61 skills are ready to use.
+Restart OpenCode. The plugin provides these tools:
+
+| Tool | Description |
+|------|-------------|
+| `bmm_list` | List all available agents and skills |
+| `bmm_agent` | Get agent definition by name |
+| `bmm_skill` | Get skill instructions by name |
+| `bmm_install` | Copy agents/skills to your project's `.opencode` folder |
+
+### Installing Agents & Skills to Your Project
+
+After adding the plugin, run:
+
+```
+Use the bmm_install tool to install agents and skills
+```
+
+This copies all 17 agents and 61 skills to your project's `.opencode/` directory. Restart OpenCode to use them with Tab switching and slash commands.
 
 ---
 
@@ -49,10 +66,11 @@ rm -rf package bmm-opencode-*.tgz
 
 ## Quick Start
 
-After installation, restart OpenCode and you'll have access to:
+After installation, you have access to:
 
-1. **17 Specialized Agents** - Switch agents using `Tab` key
-2. **61 Workflow Skills** - Load skills via slash commands like `/bmad-bmm-create-prd`
+1. **Plugin Tools** - Use `bmm_list`, `bmm_agent`, `bmm_skill` directly
+2. **17 Specialized Agents** - After `bmm_install`, switch agents using `Tab` key
+3. **61 Workflow Skills** - After `bmm_install`, load skills via slash commands like `/bmad-bmm-create-prd`
 
 ---
 
@@ -125,7 +143,15 @@ After installation, restart OpenCode and you'll have access to:
 
 ## Usage
 
-### Switch to an agent
+### Using Plugin Tools
+
+```
+Use bmm_list to see all available agents and skills
+Use bmm_skill with name bmad-bmm-create-prd to get the PRD creation workflow
+Use bmm_install to copy everything to my project
+```
+
+### Switch to an agent (after bmm_install)
 
 Press `Tab` or use the agent switch keybind, then select an agent.
 
