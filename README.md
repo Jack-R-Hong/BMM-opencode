@@ -5,17 +5,13 @@
 
 BMAD-METHOD agents and skills converted for [OpenCode](https://opencode.ai) - ready-to-use AI agent plugins.
 
-BMAD-METHOD 的 agents 和 skills，已轉換為 [OpenCode](https://opencode.ai) 格式 - 即裝即用的 AI agent 插件。
-
 ---
 
-## Installation 安裝
+## Installation
 
-### Method 1: Via npm plugin (Recommended 推薦)
+### Method 1: Via npm plugin (Recommended)
 
 Add `bmm-opencode` to your `opencode.json` config file:
-
-將 `bmm-opencode` 加入你的 `opencode.json` 設定檔：
 
 ```json
 {
@@ -26,47 +22,40 @@ Add `bmm-opencode` to your `opencode.json` config file:
 
 That's it! OpenCode will automatically download and install the plugin.
 
-就這樣！OpenCode 會自動下載並安裝插件。
-
-### Method 2: Via git clone (Manual 手動安裝)
+### Method 2: Via git clone
 
 ```bash
-# Clone the repository 複製倉庫
+# Clone the repository
 git clone https://github.com/Jack-R-Hong/BMM-opencode.git
 
-# Copy .opencode folder to your project 複製 .opencode 資料夾到你的專案
+# Copy .opencode folder to your project
 cp -r BMM-opencode/.opencode /path/to/your-project/.opencode
 ```
 
-### Method 3: Via npm download (Manual 手動安裝)
+### Method 3: Via npm download
 
 ```bash
-# Download the package 下載套件
+# Download the package
 npm pack bmm-opencode
 
-# Extract and copy 解壓並複製
+# Extract and copy
 tar -xzf bmm-opencode-*.tgz
 cp -r package/.opencode /path/to/your-project/.opencode
 
-# Clean up 清理
+# Clean up
 rm -rf package bmm-opencode-*.tgz
 ```
 
 ---
 
-## Quick Start 快速開始
+## Quick Start
 
 After installation, restart OpenCode and you'll have access to:
 
-安裝後重啟 OpenCode，你就可以使用：
-
 1. **17 Specialized Agents** - Switch agents using `Tab` key
-   
-   **17 個專業 Agent** - 使用 `Tab` 鍵切換 agent
-
 2. **61 Workflow Skills** - Load skills via slash commands like `/bmad-bmm-create-prd`
-   
-   **61 個工作流程 Skill** - 透過斜線命令載入 skill，如 `/bmad-bmm-create-prd`
+
+---
 
 ## What's Included
 
@@ -133,6 +122,8 @@ After installation, restart OpenCode and you'll have access to:
 - `bmad-core-task-editorial-review-structure` - Structure editing
 - `bmad-core-task-shard-doc` - Document sharding
 
+---
+
 ## Usage
 
 ### Switch to an agent
@@ -152,6 +143,8 @@ Press `Tab` or use the agent switch keybind, then select an agent.
 ```
 Load the bmad-bmm-create-prd skill and help me create a PRD
 ```
+
+---
 
 ## Source
 
