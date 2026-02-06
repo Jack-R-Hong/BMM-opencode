@@ -103,6 +103,63 @@ Choose:
 | `max_retry_per_story` | 3 | Retries before blocking |
 | `dev_category` | deep | delegate_task category for dev |
 | `review_category` | ultrabrain | delegate_task category for review |
+| `delegated_mode` | false | Auto-detected when PRE-SELECTED block present |
+
+---
+
+## DELEGATED EXECUTION (Orchestrator Support)
+
+When launched by an orchestrator (e.g., Sisyphus ultrawork via `delegate_task`), this workflow supports **delegated mode** to bypass interactive prompts.
+
+### How It Works
+
+1. Orchestrator includes `PRE-SELECTED:` block in prompt with epic, mode, execution choices
+2. Step 1 detects the block, skips both selection prompts
+3. All subsequent `<ask>` prompts auto-resolve (auto-fix, auto-continue)
+4. Context is compacted after each loop to prevent overflow
+5. On exit, a structured `DEV_TEAM_MODE_RESULT:` YAML block is returned
+
+### Orchestrator Usage
+
+```javascript
+delegate_task({
+  category: "deep",
+  load_skills: ["bmad-bmm-dev-team-mode"],
+  run_in_background: false,
+  prompt: `
+    TASK: Run dev-team-mode
+
+    PRE-SELECTED:
+    - epic: epic-2
+    - mode: autopilot
+    - execution: parallel
+    - max_parallel: 3
+
+    CONTEXT:
+    - sprint_status: docs/sprint-status.yaml
+    - story_dir: docs/stories/
+    - project_context: docs/project-context.md
+
+    Run until epic complete or all stories blocked.
+  `
+})
+```
+
+### Return Format
+
+```yaml
+DEV_TEAM_MODE_RESULT:
+  status: completed | blocked | paused | error
+  epic: epic-2
+  loops: 3
+  stories:
+    done: [1-1-setup, 1-2-auth]
+    failed: []
+    blocked: [1-3-integration]
+    remaining: [1-4-polish]
+  summary: "2 stories completed, 1 blocked"
+  action_required: "Resolve 1-3 dependency"
+```
 
 ---
 

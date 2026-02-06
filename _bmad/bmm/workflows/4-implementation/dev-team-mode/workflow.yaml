@@ -54,9 +54,19 @@ input_file_patterns:
     whole: "**/project-context.md"
     load_strategy: "FULL_LOAD"
 
+# Delegated mode (orchestrator support)
+delegated_mode:
+  enabled: false
+  pre_selected:
+    epic: ""
+    mode: ""           # autopilot | continue | select
+    execution: ""      # parallel | sequential
+    max_parallel: 3
+
 # Workflow state tracking (maintained in frontmatter during execution)
 state_schema:
   workflowType: "dev-team-mode"
+  delegated_mode: false
   selected_epic: ""
   parallel_stories: []
   active_agents: []

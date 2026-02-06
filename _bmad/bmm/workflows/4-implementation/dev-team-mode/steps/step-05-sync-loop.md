@@ -94,6 +94,32 @@ epic_progress:
 
 ---
 
+### 5.3.1 Context Summarization (Delegated Mode)
+
+<check if="delegated_mode == true">
+  <action>Compact context to prevent overflow in long-running loops:</action>
+  
+  Discard from context:
+  - Raw agent outputs from previous loops
+  - Verbose error traces (keep one-line summaries)
+  - Intermediate status displays
+  
+  Retain only:
+  ```yaml
+  loop_history:
+    - loop: {{loop_count}}
+      dev_completed: [story-keys...]
+      dev_failed: [story-keys...]
+      review_approved: [story-keys...]
+      review_needs_fixes: [story-keys...]
+      blocked: [story-keys...]
+  ```
+  
+  <output>📦 Context compacted: {{loop_count}} loops summarized</output>
+</check>
+
+---
+
 ### 5.4 Continue Loop Decision
 
 <check if="autopilot == true">
@@ -206,6 +232,26 @@ Choose:
 
 <action>Update sprint-status.yaml: {{selected_epic}} = "done"</action>
 
+<check if="delegated_mode == true">
+  <output>
+```yaml
+DEV_TEAM_MODE_RESULT:
+  status: completed
+  epic: {{selected_epic}}
+  loops: {{loop_count}}
+  stories:
+    done: [{{done_stories | keys}}]
+    failed: [{{failed_stories | keys}}]
+    blocked: [{{blocked_stories | keys}}]
+    remaining: []
+  summary: "Epic {{selected_epic}} fully completed. {{done_count}} stories done in {{loop_count}} loops."
+  action_required: none
+  next_suggested: "/bmad-bmm-retrospective"
+```
+  </output>
+  <halt reason="Delegated mode: epic complete" />
+</check>
+
 <ask>
 **What's next?**
 
@@ -233,6 +279,31 @@ Choose:
 ---
 
 ### 5.7 Epic Blocked
+
+<check if="delegated_mode == true">
+  <output>
+```yaml
+DEV_TEAM_MODE_RESULT:
+  status: blocked
+  epic: {{selected_epic}}
+  loops: {{loop_count}}
+  stories:
+    done: [{{done_stories | keys}}]
+    failed: [{{failed_stories | keys}}]
+    blocked: [{{blocked_stories | keys}}]
+    remaining: [{{remaining_stories | keys}}]
+  summary: "Epic {{selected_epic}} blocked. {{done_count}} done, {{blocked_count}} blocked after {{loop_count}} loops."
+  action_required: "Resolve blocked stories: {{blocked_stories | reasons}}"
+  blocked_details:
+{{#each blocked_stories}}
+    - story: {{key}}
+      reason: "{{reason}}"
+      attempts: {{retry_count}}
+{{/each}}
+```
+  </output>
+  <halt reason="Delegated mode: epic blocked" />
+</check>
 
 <output>
 ## ❌ Epic Blocked
@@ -300,6 +371,26 @@ State saved to `{implementation_artifacts}/dev-team-mode-state.yaml`
 ---
 
 ### 5.9 Graceful Exit
+
+<check if="delegated_mode == true">
+  <output>
+```yaml
+DEV_TEAM_MODE_RESULT:
+  status: paused
+  epic: {{selected_epic}}
+  loops: {{loop_count}}
+  stories:
+    done: [{{done_stories | keys}}]
+    failed: [{{failed_stories | keys}}]
+    blocked: [{{blocked_stories | keys}}]
+    remaining: [{{remaining_stories | keys}}]
+  summary: "Session ended. {{total_completed}} done, {{total_remaining}} remaining."
+  action_required: "Re-run dev-team-mode to continue remaining stories"
+```
+  </output>
+  <action>Clean up workflow state</action>
+  <halt reason="Delegated mode: graceful exit" />
+</check>
 
 <output>
 ## 👋 Dev Team Mode Complete

@@ -7,6 +7,42 @@
 
 ## EXECUTION PROTOCOL
 
+### 1.0 Detect Delegated Mode
+
+<action>Check if prompt contains PRE-SELECTED block:</action>
+
+```
+Pattern: "PRE-SELECTED:" followed by "- epic:", "- mode:", "- execution:"
+```
+
+<check if="PRE-SELECTED block found in prompt">
+  <action>Parse pre-filled parameters:</action>
+  
+  ```yaml
+  delegated_mode: true
+  pre_selected:
+    epic: "{{parsed_epic}}"           # e.g., "epic-2"
+    mode: "{{parsed_mode}}"           # autopilot | continue | select
+    execution: "{{parsed_execution}}" # parallel | sequential
+    max_parallel: "{{parsed_max}}"    # number, default 3
+  ```
+  
+  <output>
+🤖 **Delegated Mode Detected**
+
+Pre-filled selections:
+- Epic: {{pre_selected.epic}}
+- Mode: {{pre_selected.mode}}
+- Execution: {{pre_selected.execution}}
+
+Skipping interactive prompts. Proceeding directly.
+  </output>
+  
+  <action>Set delegated_mode = true</action>
+  <action>Set autopilot = (pre_selected.mode == "autopilot")</action>
+  <action>Skip to 1.1 with pre-filled values</action>
+</check>
+
 ### 1.1 Locate Sprint Status File
 
 <action>Read {sprint_status_file}</action>
@@ -63,6 +99,29 @@ epics:
 ---
 
 ## SELECTION 1: Epic Choice (MANDATORY)
+
+<check if="delegated_mode == true AND pre_selected.epic exists">
+  <action>Use pre-filled epic selection:</action>
+  
+  <switch on="pre_selected.mode">
+    <case value="autopilot">
+      <action>Set selected_epic = pre_selected.epic (or first epic with ready-for-dev if "auto")</action>
+      <action>Set epic_mode = "autopilot"</action>
+      <action>Set autopilot = true</action>
+    </case>
+    <case value="continue">
+      <action>Set selected_epic = epic with in-progress/review stories (or pre_selected.epic)</action>
+      <action>Set epic_mode = "continue"</action>
+    </case>
+    <case value="select">
+      <action>Set selected_epic = pre_selected.epic</action>
+      <action>Set epic_mode = "selected"</action>
+    </case>
+  </switch>
+  
+  <output>✅ Epic auto-selected: {{selected_epic}} ({{epic_mode}})</output>
+  <goto step="SELECTION 2" />
+</check>
 
 <action>Determine recommendation based on state:</action>
 
@@ -131,6 +190,25 @@ Enter [1], [2], [3], or epic name directly:
 ---
 
 ## SELECTION 2: Execution Mode (MANDATORY)
+
+<check if="delegated_mode == true AND pre_selected.execution exists">
+  <action>Use pre-filled execution mode:</action>
+  
+  <switch on="pre_selected.execution">
+    <case value="parallel">
+      <action>Set parallel_mode = true</action>
+      <action>Set execution_mode = "parallel"</action>
+      <action>Set max_parallel_agents = pre_selected.max_parallel OR 3</action>
+    </case>
+    <case value="sequential">
+      <action>Set parallel_mode = false</action>
+      <action>Set execution_mode = "sequential"</action>
+    </case>
+  </switch>
+  
+  <output>✅ Execution mode auto-selected: {{execution_mode}}</output>
+  <goto step="1.4 Validate Epic" />
+</check>
 
 <action>Count actionable stories in selected_epic:</action>
 

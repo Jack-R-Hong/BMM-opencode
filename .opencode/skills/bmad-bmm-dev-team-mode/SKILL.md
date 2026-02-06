@@ -127,6 +127,79 @@ Choose:
 | `max_retry_per_story` | 3 | Retries before blocking |
 | `dev_category` | deep | delegate_task category for dev |
 | `review_category` | ultrabrain | delegate_task category for review |
+| `delegated_mode` | false | Auto-detected when pre-filled params present in prompt |
+
+---
+
+## DELEGATED MODE (Sisyphus Ultrawork Support)
+
+When this workflow is launched via `delegate_task` by an orchestrator (e.g., Sisyphus ultrawork), interactive prompts cannot reach the user. Delegated mode solves this.
+
+### Detection
+
+Delegated mode activates automatically when the prompt contains a `PRE-SELECTED:` block:
+
+```
+PRE-SELECTED:
+- epic: epic-2
+- mode: autopilot | continue | select
+- execution: parallel | sequential
+- max_parallel: 3
+```
+
+### Behavior Changes in Delegated Mode
+
+| Step | Normal Mode | Delegated Mode |
+|------|-------------|----------------|
+| Step 1 Selection 1 | Ask user: epic choice | Use `pre-selected.epic` |
+| Step 1 Selection 2 | Ask user: execution mode | Use `pre-selected.execution` |
+| Step 2 Plan confirm | Ask user: proceed? | Auto-proceed (Y) |
+| Step 4 Needs-fixes | Ask user: auto-fix? | Auto-fix always |
+| Step 5 Continue? | Ask user: continue/pause/exit | Auto-continue (autopilot behavior) |
+
+### Pre-Fill Format (for orchestrators)
+
+```
+TASK: Run dev-team-mode
+
+PRE-SELECTED:
+- epic: epic-2
+- mode: autopilot
+- execution: parallel
+- max_parallel: 3
+
+CONTEXT:
+- sprint_status: {path to sprint-status.yaml}
+- story_dir: {path to story files}
+- project_context: {path to project-context.md}
+```
+
+### Structured Output (returned to orchestrator)
+
+When delegated mode completes or exits, return a structured summary:
+
+```yaml
+DEV_TEAM_MODE_RESULT:
+  status: completed | blocked | paused | error
+  epic: epic-2
+  loops: 3
+  stories:
+    done: [1-1-setup, 1-2-auth, 1-3-data]
+    failed: []
+    blocked: [1-4-integration]
+    remaining: [1-5-polish]
+  summary: "3 stories completed, 1 blocked on missing API dependency"
+  action_required: "Resolve 1-4 dependency on external API, then re-run"
+```
+
+### Context Management for Long Loops
+
+In delegated mode, after each loop (Step 5), discard raw agent outputs and retain only:
+- Per-story status (done/failed/blocked + one-line reason)
+- Cumulative stats
+- Current sprint-status.yaml state
+
+This prevents context window overflow during multi-loop autopilot runs.
 
 ---
 
