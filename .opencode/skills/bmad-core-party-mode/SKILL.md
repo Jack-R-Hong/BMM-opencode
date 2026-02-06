@@ -185,6 +185,23 @@ When an agent asks the user a specific question:
 - Clearly highlight the questioning agent and their question
 - Wait for user response before any agent continues
 
+### Decision Points
+
+When agents identify divergent views, trade-offs, or questions requiring user decision, ALWAYS present structured numbered options:
+
+```
+❓ **Decisions Needed**
+
+| # | Decision | Options |
+|---|----------|---------|
+| 1 | [topic] | [A] option-a / [B] option-b / [C] option-c |
+| 2 | [topic] | [A] option-a / [B] option-b |
+
+> Reply with number + letter (e.g., `1A`, `2B`) to decide, or ask agents to elaborate.
+```
+
+Never leave decisions as open-ended text — structure them as actionable choices.
+
 ### Inter-Agent Questions
 
 Agents can question each other and respond naturally within the same round for dynamic conversation.

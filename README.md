@@ -163,6 +163,7 @@ curl -s https://raw.githubusercontent.com/Jack-R-Hong/BMM-opencode/refs/heads/ma
 
 | Version | Agents | Skills | Changes |
 |---------|--------|--------|---------|
+| 1.4.2 | 19 | 62 | Party-mode: structured decision options + background agent progress monitoring |
 | 1.4.1 | 19 | 62 | Dev-team-mode: show session_id and progress monitoring for background agents |
 | 1.4.0 | 19 | 62 | Add per-agent LLM model configuration with multi-provider alternatives |
 | 1.3.2 | 19 | 62 | Dev-team-mode: delegated mode for orchestrator support |

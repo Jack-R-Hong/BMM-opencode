@@ -112,6 +112,32 @@ Agents can ask thinking-aloud questions without pausing conversation flow.
 **Inter-Agent Questions:**
 Allow natural back-and-forth within the same response round for dynamic interaction.
 
+### 5.5 Decision Point Protocol
+
+When agents identify divergent views, trade-offs, or questions requiring user decision:
+
+**ALWAYS present structured options instead of open-ended questions.**
+
+**Format:**
+
+```
+❓ **Decisions Needed**
+
+| # | Decision | Options |
+|---|----------|---------|
+| 1 | [topic] | [A] option-a / [B] option-b / [C] option-c |
+| 2 | [topic] | [A] option-a / [B] option-b |
+
+> Reply with number + letter (e.g., `1A`, `2B`) to decide, or ask agents to elaborate.
+```
+
+**Rules:**
+- Each decision MUST have at least 2 concrete options
+- Options should reflect actual agent viewpoints when based on divergent views
+- Include a brief rationale with each option when helpful
+- After user decides, acknowledge and update discussion context
+- Use `decide [#]` command to revisit any previous decision
+
 ### 6. Response Round Completion
 
 After generating all agent responses for the round, let the user know he can speak naturally with the agents, and then show these menu options:

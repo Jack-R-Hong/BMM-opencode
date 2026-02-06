@@ -286,19 +286,27 @@ Provide your expert perspective on this topic. Think deeply and thoroughly.
 ```
 🔄 **Meeting in Progress - Agents Thinking...**
 
-| Agent | Model | Status | Task ID |
-|-------|-------|--------|---------|
-| 🏗️ Winston | o3 | 🔄 analyzing... | bg_xxx |
-| 💻 Amelia | sonnet-4 | 🔄 analyzing... | bg_yyy |
-| 🧪 Murat | gemini-2.5-pro | 🔄 analyzing... | bg_zzz |
+| Agent | Model | Status | Task ID | Session ID |
+|-------|-------|--------|---------|------------|
+| 🏗️ Winston | o3 | 🔄 analyzing... | `bg_xxx` | `ses_xxx` |
+| 💻 Amelia | sonnet-4 | 🔄 analyzing... | `bg_yyy` | `ses_yyy` |
+| 🧪 Murat | gemini-2.5-pro | 🔄 analyzing... | `bg_zzz` | `ses_zzz` |
 
 ⏳ Collecting insights from all participants...
+
+### 📋 How to Check Progress
+
+View any agent's real-time thinking:
+```
+background_output(task_id="<task_id>")
+```
 
 ---
 
 💡 **While waiting, you can:**
 - `+agent` - Add another agent to this meeting
 - `status` - Check progress
+- `background_output(task_id="bg_xxx")` - View specific agent's progress
 - `cancel` - Cancel and restart
 ```
 
@@ -351,8 +359,16 @@ Provide your expert perspective on this topic. Think deeply and thoroughly.
 | 🔴 High | [action] | architect, dev |
 | 🟡 Medium | [action] | tea |
 
-**❓ Open Questions:**
-1. [question needing user decision]
+**❓ Decisions Needed:**
+
+When the synthesis reveals open questions or divergent views requiring user decision, present numbered options:
+
+| # | Decision | Options |
+|---|----------|---------|
+| 1 | [decision topic] | [A] option-a / [B] option-b / [C] option-c |
+| 2 | [decision topic] | [A] option-a / [B] option-b |
+
+> Reply with the number + letter (e.g., `1A`, `2B`) to decide, or ask agents to elaborate.
 
 **📝 Action Items:**
 - [ ] [item 1]
@@ -365,6 +381,7 @@ Provide your expert perspective on this topic. Think deeply and thoroughly.
 - `@agent question` - Ask specific agent a follow-up
 - `deep [topic]` - Deep dive on specific topic
 - `vote [options]` - Get agent votes on decision
+- `decide [#]` - Revisit a specific decision point
 - `summarize` - Get executive summary
 - `report` - End meeting and generate summary report file (choose summary or detailed)
 - `exit` - End meeting
@@ -476,6 +493,7 @@ meeting_state:
 | `@all [question]` | Ask all agents | `@all thoughts on timeline?` |
 | `deep [topic]` | Deep dive | `deep security concerns` |
 | `vote [question]` | Get agent votes | `vote monolith vs microservice` |
+| `decide [#]` | Revisit decision point | `decide 1` |
 | `status` | Show meeting status | |
 | `list` | Show all available agents | |
 | `attendees` | Show current participants | |
@@ -785,6 +803,7 @@ Thank you for using Party Mode! 🎉
 11. **GRACEFUL EXIT** - Summarize meeting when ending
 12. **HANDLE ERRORS** - Provide helpful error messages
 13. **ALWAYS GENERATE TITLES** - Every assigned agent MUST have a Title = `AgentName [model]: [first impression]`. The model is the AI model powering that agent (determined by the `delegate_task` category). The first impression is a short, punchy one-liner (≤15 words) reflecting the agent's instinctive gut reaction to the meeting topic from their area of expertise. Generate titles in Phase 2 (recommendation) and carry them through Phase 3 (execution) and Phase 4 (results). Late-arriving agents (`+agent`) also get a title upon joining.
+14. **PRESENT OPTIONS FOR DECISIONS** - When synthesis reveals divergent views, open questions, or any point requiring user decision, ALWAYS present numbered options with clear choices (e.g., `1A`, `1B`). Never leave decisions as open-ended text — structure them as actionable choices the user can select from.
 
 ---
 
