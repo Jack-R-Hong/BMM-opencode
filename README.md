@@ -139,71 +139,47 @@ Load the bmad-bmm-create-prd skill and help me create a PRD
 
 ## Update / Upgrade
 
-### Method 1: Update Plugin (Recommended)
+### For Humans
 
-Update the npm package in your `opencode.json`:
-
-```json
-{
-  "mcp": {
-    "bmm": {
-      "type": "npm",
-      "package": "bmm-opencode@latest"
-    }
-  }
-}
-```
-
-Then restart OpenCode.
-
-### Method 2: Reinstall Agents & Skills
-
-If you've already run `bmm_install`, update the installed files:
+Paste this into your LLM agent session:
 
 ```
-Use bmm_install with force=true to overwrite existing agents and skills
+Upgrade bmm-opencode by following the instructions here:
+https://raw.githubusercontent.com/Jack-R-Hong/BMM-opencode/main/docs/upgrade.md
 ```
 
-Or via LLM:
+### For LLM Agents
+
+Fetch the upgrade guide and follow it:
+
+```bash
+curl -s https://raw.githubusercontent.com/Jack-R-Hong/BMM-opencode/main/docs/upgrade.md
 ```
+
+### Quick Upgrade
+
+```bash
+# 1. Update opencode.json to use latest version
+# 2. Restart OpenCode
+# 3. Run via LLM:
 bmm_install({ force: true })
 ```
 
-This will:
-- Overwrite all agents in `.opencode/agents/`
-- Overwrite all skills in `.opencode/skills/`
-- Preserve any custom agents/skills you've created (if names don't conflict)
+### Full Upgrade Guide
 
-### Method 3: Manual Update
-
-1. Check current version:
-   ```bash
-   npm list bmm-opencode
-   ```
-
-2. Update to latest:
-   ```bash
-   npm update bmm-opencode
-   ```
-
-3. Reinstall agents/skills:
-   ```
-   bmm_install({ force: true })
-   ```
-
-### Check for Updates
-
-```
-Use bmm_list to see the current version and available agents/skills
-```
+See **[docs/upgrade.md](docs/upgrade.md)** for:
+- Detailed upgrade methods
+- Version history
+- Troubleshooting
+- Rollback instructions
 
 ### Version History
 
-| Version | Changes |
-|---------|---------|
-| 1.2.0 | Added `party-mode` (multi-agent meetings) and `gen-subagent` (agent factory) |
-| 1.1.0 | Added bmad-opencode-converter integration |
-| 1.0.1 | Initial release with 17 agents, 61 skills |
+| Version | Agents | Skills | Changes |
+|---------|--------|--------|---------|
+| 1.2.0 | 19 | 61 | Added `party-mode`, `gen-subagent`, upgrade docs |
+| 1.1.0 | 17 | 61 | Added bmad-opencode-converter integration |
+| 1.0.1 | 17 | 61 | Initial release |
 
 ---
 
