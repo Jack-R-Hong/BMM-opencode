@@ -9,9 +9,9 @@ BMAD-METHOD agents and skills converted for [OpenCode](https://opencode.ai) - re
 
 ## Installation
 
-### Method 1: Via npm plugin (Recommended)
+### One-Line Install (Recommended)
 
-Add `bmm-opencode` to your `opencode.json` config file:
+Simply add `bmm-opencode` to your `opencode.json`:
 
 ```json
 {
@@ -20,31 +20,30 @@ Add `bmm-opencode` to your `opencode.json` config file:
 }
 ```
 
-That's it! OpenCode will automatically download and install the plugin.
+**Done!** Restart OpenCode and all 17 agents + 61 skills are ready to use.
 
-### Method 2: Via git clone
+---
+
+<details>
+<summary><b>Alternative: Manual Installation</b></summary>
+
+#### Via git clone
 
 ```bash
-# Clone the repository
 git clone https://github.com/Jack-R-Hong/BMM-opencode.git
-
-# Copy .opencode folder to your project
 cp -r BMM-opencode/.opencode /path/to/your-project/.opencode
 ```
 
-### Method 3: Via npm download
+#### Via npm pack
 
 ```bash
-# Download the package
 npm pack bmm-opencode
-
-# Extract and copy
 tar -xzf bmm-opencode-*.tgz
 cp -r package/.opencode /path/to/your-project/.opencode
-
-# Clean up
 rm -rf package bmm-opencode-*.tgz
 ```
+
+</details>
 
 ---
 
