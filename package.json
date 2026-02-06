@@ -32,7 +32,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "prepublishOnly": "npm run build"
+    "test": "node --experimental-vm-modules --test tests/*.test.js",
+    "prepublishOnly": "npm run build && npm test"
   },
   "dependencies": {
     "@opencode-ai/plugin": "^1.1.51"
