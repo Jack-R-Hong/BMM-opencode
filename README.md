@@ -163,6 +163,7 @@ curl -s https://raw.githubusercontent.com/Jack-R-Hong/BMM-opencode/refs/heads/ma
 
 | Version | Agents | Skills | Changes |
 |---------|--------|--------|---------|
+| 1.3.2 | 19 | 62 | Dev-team-mode: delegated mode for orchestrator support |
 | 1.3.1 | 19 | 62 | Party-mode: agent titles with first impressions |
 | 1.3.0 | 19 | 62 | Added `dev-team-mode` parallel development orchestrator |
 | 1.2.0 | 19 | 61 | Added `party-mode`, `gen-subagent`, upgrade docs |
