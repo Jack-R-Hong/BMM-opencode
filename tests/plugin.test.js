@@ -36,10 +36,10 @@ describe("bmm_list", async () => {
     assert.ok(output.includes("## Agents (19)"));
   });
 
-  test("lists 61 skills", async () => {
+  test("lists 62 skills", async () => {
     const result = await loadPlugin();
     const output = await result.tool.bmm_list.execute({});
-    assert.ok(output.includes("## Skills (61)"));
+    assert.ok(output.includes("## Skills (62)"));
   });
 });
 
@@ -89,7 +89,7 @@ describe("bmm_install", async () => {
 
       assert.ok(output.includes("Successfully installed"));
       assert.ok(output.includes("19 agents"));
-      assert.ok(output.includes("61 skills"));
+      assert.ok(output.includes("62 skills"));
 
       assert.ok(existsSync(join(targetDir, "agents")));
       assert.ok(existsSync(join(targetDir, "skills")));
@@ -98,7 +98,7 @@ describe("bmm_install", async () => {
       const skills = readdirSync(join(targetDir, "skills"));
 
       assert.strictEqual(agents.length, 19);
-      assert.strictEqual(skills.length, 61);
+      assert.strictEqual(skills.length, 62);
     } finally {
       rmSync(tempDir, { recursive: true, force: true });
     }

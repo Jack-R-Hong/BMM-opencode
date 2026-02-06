@@ -34,7 +34,7 @@ After installation, you have access to:
 
 1. **Plugin Tools** - Use `bmm_list`, `bmm_agent`, `bmm_skill` directly
 2. **19 Specialized Agents** - After `bmm_install`, switch agents using `Tab` key
-3. **61 Workflow Skills** - After `bmm_install`, load skills via slash commands like `/bmad-bmm-create-prd`
+3. **62 Workflow Skills** - After `bmm_install`, load skills via slash commands like `/bmad-bmm-create-prd`
 
 ---
 
@@ -64,7 +64,7 @@ After installation, you have access to:
 | `party-mode` | - | Multi-Agent Meeting Orchestrator |
 | `gen-subagent` | - | Agent Factory (generates new agents) |
 
-### Skills (61)
+### Skills (62)
 
 #### BMM Module (Development Lifecycle)
 - `bmad-bmm-create-product-brief` - Create product briefs
@@ -79,6 +79,7 @@ After installation, you have access to:
 - `bmad-bmm-code-review` - Adversarial code review
 - `bmad-bmm-sprint-planning` - Sprint planning
 - `bmad-bmm-sprint-status` - Sprint status tracking
+- `bmad-bmm-dev-team-mode` - Parallel development orchestrator
 - `bmad-bmm-retrospective` - Sprint retrospectives
 - `bmad-bmm-quick-spec` - Quick tech specs
 - `bmad-bmm-quick-dev` - Quick development
@@ -162,6 +163,7 @@ curl -s https://raw.githubusercontent.com/Jack-R-Hong/BMM-opencode/refs/heads/ma
 
 | Version | Agents | Skills | Changes |
 |---------|--------|--------|---------|
+| 1.3.0 | 19 | 62 | Added `dev-team-mode` parallel development orchestrator |
 | 1.2.0 | 19 | 61 | Added `party-mode`, `gen-subagent`, upgrade docs |
 | 1.1.0 | 17 | 61 | Added bmad-opencode-converter integration |
 | 1.0.1 | 17 | 61 | Initial release |

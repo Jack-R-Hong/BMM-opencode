@@ -1,0 +1,73 @@
+# Dev Team Mode - Parallel Development Orchestrator
+name: dev-team-mode
+description: "Orchestrate parallel development of multiple stories within an epic. Reads sprint-status.yaml, asks which epic to work on, spawns parallel dev-story and code-review subagents, and loops until epic completion."
+author: "BMad"
+
+# Critical variables from config
+config_source: "{project-root}/_bmad/bmm/config.yaml"
+output_folder: "{config_source}:output_folder"
+user_name: "{config_source}:user_name"
+communication_language: "{config_source}:communication_language"
+user_skill_level: "{config_source}:user_skill_level"
+document_output_language: "{config_source}:document_output_language"
+date: system-generated
+implementation_artifacts: "{config_source}:implementation_artifacts"
+planning_artifacts: "{config_source}:planning_artifacts"
+
+# Workflow components
+installed_path: "{project-root}/_bmad/bmm/workflows/4-implementation/dev-team-mode"
+instructions: "{installed_path}/instructions.md"
+validation: "{installed_path}/checklist.md"
+
+# Workflow-specific configuration
+variables:
+  # Sprint tracking
+  sprint_status_file: "{implementation_artifacts}/sprint-status.yaml"
+  
+  # Parallelism settings
+  max_parallel_agents: 3
+  
+  # Retry settings
+  max_retry_per_story: 3
+  
+  # Subagent skills
+  dev_story_skill: "bmad-bmm-dev-story"
+  code_review_skill: "bmad-bmm-code-review"
+  
+  # Agent categories for delegation
+  dev_category: "deep"
+  review_category: "ultrabrain"
+
+# Smart input file references
+input_file_patterns:
+  sprint_status:
+    description: "Sprint status file for tracking development progress"
+    whole: "{implementation_artifacts}/sprint-status.yaml"
+    load_strategy: "FULL_LOAD"
+  epics:
+    description: "Epic files containing story definitions"
+    whole: "{planning_artifacts}/*epic*.md"
+    sharded_index: "{planning_artifacts}/*epic*/index.md"
+    load_strategy: "SELECTIVE_LOAD"
+  project_context:
+    description: "Project context for coding standards"
+    whole: "**/project-context.md"
+    load_strategy: "FULL_LOAD"
+
+# Workflow state tracking (maintained in frontmatter during execution)
+state_schema:
+  workflowType: "dev-team-mode"
+  selected_epic: ""
+  parallel_stories: []
+  active_agents: []
+  completed_stories: []
+  failed_stories: []
+  loop_count: 0
+  phase: "init"  # init | analyzing | dev | review | sync
+
+# Exit conditions
+exit_triggers:
+  - "*exit"
+  - "stop"
+  - "quit"
+  - "end team"

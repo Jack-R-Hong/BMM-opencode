@@ -38,6 +38,7 @@
 ├── bmm-sprint-status/SKILL.md          # Sprint 狀態追蹤
 ├── bmm-create-story/SKILL.md           # 建立 Story
 ├── bmm-dev-story/SKILL.md              # 開發 Story
+├── bmm-dev-team-mode/SKILL.md          # 並行開發協調器
 ├── bmm-code-review/SKILL.md            # 程式碼審查
 ├── bmm-retrospective/SKILL.md          # 回顧會議
 ├── bmm-correct-course/SKILL.md         # 航向修正
@@ -127,7 +128,7 @@
 |--------|------|-------------|
 | Agent Skills | 角色人格 | 9 |
 | Planning Workflows | 規劃階段工作流 | 8 |
-| Implementation Workflows | 實作階段工作流 | 7 |
+| Implementation Workflows | 實作階段工作流 | 8 |
 | Quick Flow | 快速開發流程 | 3 |
 | Research | 研究相關 | 3 |
 | Utilities | 工具類 | 2 |
