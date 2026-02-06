@@ -30,10 +30,10 @@ describe("BMM-OpenCode Plugin", async () => {
 });
 
 describe("bmm_list", async () => {
-  test("lists 17 agents", async () => {
+  test("lists 19 agents", async () => {
     const result = await loadPlugin();
     const output = await result.tool.bmm_list.execute({});
-    assert.ok(output.includes("## Agents (17)"));
+    assert.ok(output.includes("## Agents (19)"));
   });
 
   test("lists 61 skills", async () => {
@@ -88,7 +88,7 @@ describe("bmm_install", async () => {
       );
 
       assert.ok(output.includes("Successfully installed"));
-      assert.ok(output.includes("17 agents"));
+      assert.ok(output.includes("19 agents"));
       assert.ok(output.includes("61 skills"));
 
       assert.ok(existsSync(join(targetDir, "agents")));
@@ -97,7 +97,7 @@ describe("bmm_install", async () => {
       const agents = readdirSync(join(targetDir, "agents"));
       const skills = readdirSync(join(targetDir, "skills"));
 
-      assert.strictEqual(agents.length, 17);
+      assert.strictEqual(agents.length, 19);
       assert.strictEqual(skills.length, 61);
     } finally {
       rmSync(tempDir, { recursive: true, force: true });
