@@ -1,0 +1,35 @@
+{
+  "name": "bmm-opencode",
+  "version": "1.0.0",
+  "description": "BMAD-METHOD agents and skills for OpenCode - AI agent framework with 17 specialized agents and 61 workflow skills",
+  "keywords": [
+    "opencode",
+    "bmad",
+    "bmad-method",
+    "ai-agents",
+    "agents",
+    "skills",
+    "workflows",
+    "product-management",
+    "software-development",
+    "agile",
+    "scrum"
+  ],
+  "homepage": "https://github.com/Jack-R-Hong/BMM-opencode#readme",
+  "bugs": {
+    "url": "https://github.com/Jack-R-Hong/BMM-opencode/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jack-R-Hong/BMM-opencode.git"
+  },
+  "license": "MIT",
+  "author": "Jack-R-Hong",
+  "type": "module",
+  "files": [
+    ".opencode/**/*"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
