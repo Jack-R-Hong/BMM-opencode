@@ -101,11 +101,25 @@ phase: 'dev-running'
 <output>
 ## ⏳ Development In Progress
 
-| Story | Task ID | Status | Duration |
-|-------|---------|--------|----------|
+| Story | Task ID | Session ID | Status | Duration |
+|-------|---------|------------|--------|----------|
 {{#each active_agents}}
-| {{story_key}} | {{task_id}} | {{status}} | {{duration}} |
+| {{story_key}} | `{{task_id}}` | `{{session_id}}` | {{status}} | {{duration}} |
 {{/each}}
+
+### 📋 How to Check Progress
+
+View any agent's real-time progress:
+```
+background_output(task_id="<task_id>")
+```
+
+Example:
+{{#with active_agents.[0]}}
+```
+background_output(task_id="{{task_id}}")
+```
+{{/with}}
 
 System will notify on completion. Continue other work or wait.
 </output>

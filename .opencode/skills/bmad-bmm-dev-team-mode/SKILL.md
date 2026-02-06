@@ -229,6 +229,18 @@ delegate_task({
 
 ---
 
+## MONITORING BACKGROUND AGENTS
+
+When agents are running in background, the workflow displays a progress table with **Task ID** and **Session ID** for each agent. Users can check any agent's real-time progress:
+
+```
+background_output(task_id="<task_id>")
+```
+
+This returns the agent's current status, latest tool calls, and output so far — allowing you to monitor what each dev-story or code-review agent is doing without waiting for completion.
+
+---
+
 ## STATE SCHEMA
 
 ```yaml

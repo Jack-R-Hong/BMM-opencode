@@ -129,11 +129,25 @@ phase: 'review-running'
 <output>
 ## ⏳ Code Reviews In Progress
 
-| Story | Reviewer | Status |
-|-------|----------|--------|
+| Story | Task ID | Session ID | Status |
+|-------|---------|------------|--------|
 {{#each review_agents}}
-| {{story_key}} | {{task_id}} | {{status}} |
+| {{story_key}} | `{{task_id}}` | `{{session_id}}` | {{status}} |
 {{/each}}
+
+### 📋 How to Check Progress
+
+View any reviewer's real-time progress:
+```
+background_output(task_id="<task_id>")
+```
+
+Example:
+{{#with review_agents.[0]}}
+```
+background_output(task_id="{{task_id}}")
+```
+{{/with}}
 </output>
 
 <action>Wait for completion notifications</action>
