@@ -83,10 +83,23 @@ Or directly:
 bmm_install({ force: true })
 ```
 
+#### Auto-Detection (v1.3.1+)
+
+`bmm_install` now **auto-detects** your original install location:
+
+| Scenario | Behavior |
+|----------|----------|
+| Only global install exists (`~/.config/opencode/`) | Upgrades global automatically |
+| Only local install exists (`.opencode/`) | Upgrades local automatically |
+| Both locations have BMM | Asks you to specify `global: true` or not |
+| Neither (fresh install) | Defaults to local |
+
+You no longer need to remember whether you used `global: true` originally.
+
 #### What This Does
 
-- Overwrites all agents in `.opencode/agents/`
-- Overwrites all skills in `.opencode/skills/`
+- Overwrites all agents in the detected target directory
+- Overwrites all skills in the detected target directory
 - **Preserves** custom agents/skills (if names don't conflict with BMM agents)
 
 ---
@@ -118,7 +131,10 @@ If you installed globally:
 # Update global installation
 npm update -g bmm-opencode
 
-# Reinstall to global config
+# Reinstall - auto-detects global install location (v1.3.1+)
+bmm_install({ force: true })
+
+# Or explicitly specify global
 bmm_install({ global: true, force: true })
 ```
 
@@ -174,6 +190,7 @@ cp .opencode/agents-backup/my-custom-agent.md .opencode/agents/
 
 | Version | Date | Agents | Skills | Changes |
 |---------|------|--------|--------|---------|
+| 1.3.1 | 2025-02 | 19 | 62 | Party-mode agent titles, auto-detect global/local install on upgrade |
 | 1.2.0 | 2024-02 | 19 | 61 | Added `party-mode`, `gen-subagent`, upgrade docs |
 | 1.1.0 | 2024-02 | 17 | 61 | Added bmad-opencode-converter integration |
 | 1.0.1 | 2024-01 | 17 | 61 | Initial release |

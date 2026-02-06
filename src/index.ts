@@ -308,9 +308,45 @@ ${skills.map((s) => `- ${s.name}: ${s.frontmatter.description}`).join("\n")}
         },
         async execute(args, context) {
           const globalConfigDir = join(homedir(), ".config", "opencode");
-          const targetBase = args.global
-            ? globalConfigDir
-            : args.target || join(context.directory, ".opencode");
+          const localConfigDir = args.target || join(context.directory, ".opencode");
+
+          let targetBase: string;
+          let autoDetected = false;
+
+          if (args.global) {
+            targetBase = globalConfigDir;
+          } else if (args.target) {
+            targetBase = args.target;
+          } else {
+            const globalAgentsDir = join(globalConfigDir, "agents");
+            const localAgentsDir = join(localConfigDir, "agents");
+
+            const hasBmmAgent = (dir: string): boolean => {
+              if (!existsSync(dir)) return false;
+              const files = readdirSync(dir);
+              return files.some((f) => f.startsWith("bmm-") || f.startsWith("cis-") || f.startsWith("core-") || f.startsWith("tea-") || f === "party-mode.md" || f === "gen-subagent.md");
+            };
+
+            const globalHasBmm = hasBmmAgent(globalAgentsDir);
+            const localHasBmm = hasBmmAgent(localAgentsDir);
+
+            if (globalHasBmm && !localHasBmm) {
+              targetBase = globalConfigDir;
+              autoDetected = true;
+            } else if (globalHasBmm && localHasBmm) {
+              return `BMM agents found in BOTH locations:
+- Global: ${globalConfigDir}
+- Local: ${localConfigDir}
+
+Please specify which to update:
+- \`bmm_install({ global: true, force: true })\` for global
+- \`bmm_install({ force: true })\` will default to local
+
+To avoid confusion, consider removing one installation.`;
+            } else {
+              targetBase = localConfigDir;
+            }
+          }
 
           try {
             const targetAgents = join(targetBase, "agents");
@@ -343,14 +379,16 @@ Use \`force=true\` to overwrite, or remove existing files first.`;
               skillsCopied++;
             }
 
-            const installType = args.global ? "globally" : "to project";
+            const isGlobal = targetBase === globalConfigDir;
+            const installType = isGlobal ? "globally" : "to project";
             const source = hasBmadSource() ? "converted from BMAD source" : "from bundled files";
+            const autoNote = autoDetected ? `\n\nNote: Auto-detected existing global installation at ${globalConfigDir}` : "";
             
             return `Successfully installed BMM-OpenCode ${installType} (${targetBase}):
 - ${agentsCopied} agents copied to ${targetAgents}
 - ${skillsCopied} skills copied to ${targetSkills}
 
-Source: ${source}
+Source: ${source}${autoNote}
 
 Restart OpenCode to use the new agents and skills.`;
           } catch (error) {
