@@ -160,7 +160,6 @@ Apply these rules in order. The FIRST matching rule wins for each story:
 # - depends_on lists story keys that MUST be 'done' before this story can start
 # - Only intra-epic dependencies are tracked (cross-epic deps handled by epic ordering)
 # - Stories with empty depends_on [] can start immediately
-# - dev-team-mode "delegate" execution mode uses depends_on for auto-scheduling
 #
 # WORKFLOW NOTES:
 # ===============
