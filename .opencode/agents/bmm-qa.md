@@ -2,6 +2,10 @@
 description: QA Engineer
 mode: subagent
 permission:
+  read: allow
+  edit: allow
+  write: allow
+  grep: allow
   skill:
     "bmad-bmm-qa": allow
     "bmad-bmm-automate": allow

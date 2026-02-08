@@ -2,6 +2,10 @@
 description: UX Designer
 mode: subagent
 permission:
+  read: allow
+  edit: allow
+  write: allow
+  grep: allow
   skill:
     "bmad-bmm-ux-designer": allow
     "bmad-bmm-create-ux-design": allow

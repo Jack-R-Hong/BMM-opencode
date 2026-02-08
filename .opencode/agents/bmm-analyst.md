@@ -2,6 +2,10 @@
 description: Business Analyst
 mode: subagent
 permission:
+  read: allow
+  edit: allow
+  write: allow
+  grep: allow
   skill:
     "bmad-bmm-analyst": allow
     "bmad-brainstorming": allow

@@ -2,6 +2,10 @@
 description: Scrum Master
 mode: subagent
 permission:
+  read: allow
+  edit: allow
+  write: allow
+  grep: allow
   skill:
     "bmad-bmm-sm": allow
     "bmad-bmm-sprint-planning": allow
