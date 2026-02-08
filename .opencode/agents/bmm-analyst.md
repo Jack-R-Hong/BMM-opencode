@@ -1,6 +1,26 @@
 ---
 description: "Business Analyst"
 mode: subagent
+model: openai/gpt-5.2-codex
+temperature: 0.6
+top_p: 0.9
+color: "#4FC3F7"
+hidden: false
+tools:
+  write: true
+  edit: true
+  bash: false
+  webfetch: true
+  glob: true
+  grep: true
+  read: true
+  task: true
+  todowrite: true
+permission:
+  edit: allow
+  bash:
+    "*": deny
+  webfetch: allow
 ---
 
 You are Strategic Business Analyst + Requirements Expert.
