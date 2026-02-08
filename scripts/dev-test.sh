@@ -1,169 +1,193 @@
 #!/bin/bash
 # dev-test.sh
-# Build TypeScript project and install to .opencode for testing
-# 
+# One-shot local test: build → install to .opencode → ensure opencode.json → prompt restart
+#
 # Usage:
 #   ./scripts/dev-test.sh           # Build and install
-#   ./scripts/dev-test.sh --clean   # Unlink/uninstall before reinstalling
-#   ./scripts/dev-test.sh --watch   # Suggestion: use with 'npm run dev' for auto-rebuild
-#   ./scripts/dev-test.sh --help    # Show this help
+#   ./scripts/dev-test.sh --clean   # Clean previous install first
+#   ./scripts/dev-test.sh --help    # Show help
 
 set -e
 
-# Color definitions
+# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m'
 
-# Default values
+# Defaults
 CLEAN=false
 SHOW_HELP=false
 
-# Parse arguments
+# Parse args
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --clean) CLEAN=true ;;
-        --watch) 
-            echo -e "${YELLOW}Tip: Use 'npm run dev' in another terminal for auto-rebuild${NC}"
-            ;;
         --help|-h) SHOW_HELP=true ;;
         *) echo "Unknown parameter: $1"; exit 1 ;;
     esac
     shift
 done
 
-# Show help if requested
 if [ "$SHOW_HELP" = true ]; then
     echo "Usage: $0 [options]"
     echo ""
     echo "Options:"
-    echo "  --clean    Unlink/uninstall before reinstalling"
-    echo "  --watch    Suggestion: use with 'npm run dev' for auto-rebuild"
+    echo "  --clean    Remove previous install before reinstalling"
     echo "  --help     Show this help"
+    echo ""
+    echo "Flow: build → install to .opencode → ensure opencode.json → restart prompt"
     exit 0
 fi
 
-# Banner
-echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║     BMM-OpenCode Development Test Workflow                 ║${NC}"
-echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
-echo ""
-
-# Get project root
+# Paths
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OPENCODE_DIR="$PROJECT_ROOT/.opencode"
+OPENCODE_JSON="$PROJECT_ROOT/opencode.json"
 PACKAGE_NAME="bmm-opencode"
 
-# Check if .opencode directory exists
+echo -e "${BOLD}${BLUE}BMM-OpenCode Dev Test${NC}"
+echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo ""
+
+# Pre-check
 if [ ! -d "$OPENCODE_DIR" ]; then
-    echo -e "${RED}Error: .opencode directory not found at $OPENCODE_DIR${NC}"
-    echo "Please ensure .opencode is set up before running this script"
+    echo -e "${RED}✗ .opencode/ not found${NC}"
     exit 1
 fi
 
-# Step 1: Clean if requested
+STEP=1
+TOTAL=4
+[ "$CLEAN" = true ] && TOTAL=5
+
+# --- Step: Clean (optional) ---
 if [ "$CLEAN" = true ]; then
-    echo -e "${YELLOW}[1/5] Cleaning previous installation...${NC}"
-    
-    # Try to unlink if it exists
+    echo -e "${YELLOW}[$STEP/$TOTAL] Cleaning previous install...${NC}"
+
     if [ -L "$OPENCODE_DIR/node_modules/$PACKAGE_NAME" ]; then
-        npm unlink "$PACKAGE_NAME" --prefix "$OPENCODE_DIR" 2>/dev/null || true
-        echo -e "${GREEN}✓ Unlinked previous installation${NC}"
-    fi
-    
-    # Remove node_modules entry if it exists
-    if [ -d "$OPENCODE_DIR/node_modules/$PACKAGE_NAME" ]; then
+        rm -f "$OPENCODE_DIR/node_modules/$PACKAGE_NAME"
+        echo -e "  ${GREEN}✓ Removed symlink${NC}"
+    elif [ -d "$OPENCODE_DIR/node_modules/$PACKAGE_NAME" ]; then
         rm -rf "$OPENCODE_DIR/node_modules/$PACKAGE_NAME"
-        echo -e "${GREEN}✓ Removed previous installation${NC}"
+        echo -e "  ${GREEN}✓ Removed directory${NC}"
+    else
+        echo -e "  ${CYAN}– Nothing to clean${NC}"
     fi
     echo ""
+    STEP=$((STEP + 1))
 fi
 
-# Step 2: Build TypeScript
-echo -e "${YELLOW}[$([ "$CLEAN" = true ] && echo 2 || echo 1)/$([ "$CLEAN" = true ] && echo 5 || echo 4)] Building TypeScript...${NC}"
-
-if npm run build; then
-    echo -e "${GREEN}✓ Build completed successfully${NC}"
+# --- Step: Build ---
+echo -e "${YELLOW}[$STEP/$TOTAL] Building TypeScript...${NC}"
+if npm run build --silent 2>&1; then
+    FILE_COUNT=$(find "$PROJECT_ROOT/dist" -type f 2>/dev/null | wc -l)
+    echo -e "  ${GREEN}✓ Build OK${NC} (${FILE_COUNT} files in dist/)"
 else
-    echo -e "${RED}✗ Build failed${NC}"
+    echo -e "  ${RED}✗ Build failed${NC}"
     exit 1
 fi
 echo ""
+STEP=$((STEP + 1))
 
-# Step 3: Show build artifacts
-echo -e "${YELLOW}[$([ "$CLEAN" = true ] && echo 3 || echo 2)/$([ "$CLEAN" = true ] && echo 5 || echo 4)] Build artifacts:${NC}"
-if [ -d "$PROJECT_ROOT/dist" ]; then
-    DIST_SIZE=$(du -sh "$PROJECT_ROOT/dist" | cut -f1)
-    FILE_COUNT=$(find "$PROJECT_ROOT/dist" -type f | wc -l)
-    echo -e "  Size: ${GREEN}$DIST_SIZE${NC} ($FILE_COUNT files)"
-else
-    echo -e "${RED}  Warning: dist directory not found${NC}"
-fi
-echo ""
-
-# Step 4: Install to .opencode
-echo -e "${YELLOW}[$([ "$CLEAN" = true ] && echo 4 || echo 3)/$([ "$CLEAN" = true ] && echo 5 || echo 4)] Installing to .opencode...${NC}"
+# --- Step: Install to .opencode ---
+echo -e "${YELLOW}[$STEP/$TOTAL] Installing to .opencode/...${NC}"
 
 cd "$OPENCODE_DIR"
 
-# Try npm link first (preferred for development)
+INSTALL_METHOD=""
 if npm link "$PROJECT_ROOT" 2>/dev/null; then
-    echo -e "${GREEN}✓ Package linked successfully (development mode)${NC}"
-    INSTALL_METHOD="npm link"
+    INSTALL_METHOD="link"
+    echo -e "  ${GREEN}✓ Linked (dev mode)${NC}"
 else
-    # Fallback to npm install
-    if npm install "$PROJECT_ROOT" 2>/dev/null; then
-        echo -e "${GREEN}✓ Package installed successfully${NC}"
-        INSTALL_METHOD="npm install"
+    if npm install "$PROJECT_ROOT" --no-save 2>/dev/null; then
+        INSTALL_METHOD="install"
+        echo -e "  ${GREEN}✓ Installed (local copy)${NC}"
     else
-        echo -e "${RED}✗ Installation failed${NC}"
+        echo -e "  ${RED}✗ Install failed${NC}"
         cd "$PROJECT_ROOT"
         exit 1
     fi
 fi
 
 cd "$PROJECT_ROOT"
-echo ""
 
-# Step 5: Verify installation
-echo -e "${YELLOW}[$([ "$CLEAN" = true ] && echo 5 || echo 4)/$([ "$CLEAN" = true ] && echo 5 || echo 4)] Verifying installation...${NC}"
-
-if [ -d "$OPENCODE_DIR/node_modules/$PACKAGE_NAME" ]; then
-    PLUGIN_SIZE=$(du -sh "$OPENCODE_DIR/node_modules/$PACKAGE_NAME" | cut -f1)
-    echo -e "${GREEN}✓ Plugin found in .opencode/node_modules/$PACKAGE_NAME${NC}"
-    echo -e "  Size: ${GREEN}$PLUGIN_SIZE${NC}"
+# Verify
+if [ -d "$OPENCODE_DIR/node_modules/$PACKAGE_NAME" ] || [ -L "$OPENCODE_DIR/node_modules/$PACKAGE_NAME" ]; then
+    echo -e "  ${GREEN}✓ Verified: .opencode/node_modules/$PACKAGE_NAME${NC}"
 else
-    echo -e "${RED}✗ Plugin not found in .opencode/node_modules/$PACKAGE_NAME${NC}"
+    echo -e "  ${RED}✗ Not found after install${NC}"
     exit 1
 fi
 echo ""
+STEP=$((STEP + 1))
 
-# Final instructions
-echo -e "${GREEN}════════════════════════════════════════════════════════════${NC}"
-echo -e "${GREEN}✓ Development test workflow completed!${NC}"
-echo -e "${GREEN}════════════════════════════════════════════════════════════${NC}"
+# --- Step: Ensure opencode.json ---
+echo -e "${YELLOW}[$STEP/$TOTAL] Ensuring opencode.json has plugin config...${NC}"
+
+if [ ! -f "$OPENCODE_JSON" ]; then
+    # Create new opencode.json
+    cat > "$OPENCODE_JSON" <<'EOF'
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": ["bmm-opencode"]
+}
+EOF
+    echo -e "  ${GREEN}✓ Created opencode.json with plugin: [\"bmm-opencode\"]${NC}"
+else
+    # Check if bmm-opencode is already in plugin array
+    if grep -q '"bmm-opencode"' "$OPENCODE_JSON" 2>/dev/null; then
+        echo -e "  ${CYAN}– Already configured (bmm-opencode found in opencode.json)${NC}"
+    else
+        # Check if plugin array exists
+        if grep -q '"plugin"' "$OPENCODE_JSON" 2>/dev/null; then
+            # Add to existing plugin array using node for safe JSON manipulation
+            node -e "
+                const fs = require('fs');
+                const config = JSON.parse(fs.readFileSync('$OPENCODE_JSON', 'utf-8'));
+                if (Array.isArray(config.plugin)) {
+                    if (!config.plugin.includes('bmm-opencode')) {
+                        config.plugin.push('bmm-opencode');
+                    }
+                } else {
+                    config.plugin = ['bmm-opencode'];
+                }
+                fs.writeFileSync('$OPENCODE_JSON', JSON.stringify(config, null, 2) + '\n');
+            "
+            echo -e "  ${GREEN}✓ Added \"bmm-opencode\" to existing plugin array${NC}"
+        else
+            # Add plugin field to existing config
+            node -e "
+                const fs = require('fs');
+                const config = JSON.parse(fs.readFileSync('$OPENCODE_JSON', 'utf-8'));
+                config.plugin = ['bmm-opencode'];
+                fs.writeFileSync('$OPENCODE_JSON', JSON.stringify(config, null, 2) + '\n');
+            "
+            echo -e "  ${GREEN}✓ Added plugin field to opencode.json${NC}"
+        fi
+    fi
+fi
 echo ""
-echo -e "${BLUE}Next Steps:${NC}"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+STEP=$((STEP + 1))
+
+# --- Done ---
+echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${GREEN}✓ Ready to test!${NC}"
+echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
-echo "1. ${YELLOW}Restart OpenCode${NC}"
-echo "   - Close and reopen your OpenCode session"
-echo "   - Or reload the plugin in your current session"
+echo -e "  Install method: ${CYAN}npm $INSTALL_METHOD${NC}"
+echo -e "  Config:         ${CYAN}$OPENCODE_JSON${NC}"
 echo ""
-echo "2. ${YELLOW}Test your plugin tools:${NC}"
-echo "   - Use ${BLUE}bmm_list${NC} to see all available agents and skills"
-echo "   - Use ${BLUE}bmm_agent${NC} with name ${BLUE}bmm-pm${NC} to load the PM agent"
-echo "   - Use ${BLUE}bmm_skill${NC} with name ${BLUE}bmad-bmm-create-prd${NC} to load a skill"
+echo -e "  ${BOLD}${YELLOW}→ Restart OpenCode to load the plugin${NC}"
 echo ""
-echo "3. ${YELLOW}For continuous development:${NC}"
-echo "   - Run ${BLUE}npm run dev${NC} in another terminal for auto-rebuild"
-echo "   - Changes will be reflected in .opencode after rebuild"
-echo "   - Installation method: ${BLUE}$INSTALL_METHOD${NC}"
+echo -e "  After restart, test with:"
+echo -e "    ${BLUE}bmm_list${NC}              – list all agents & skills"
+echo -e "    ${BLUE}bmm_agent${NC} name=bmm-pm – load PM agent"
+echo -e "    ${BLUE}bmm_skill${NC} name=...    – load a skill"
 echo ""
-echo "4. ${YELLOW}To clean and reinstall:${NC}"
-echo "   - Run ${BLUE}./scripts/dev-test.sh --clean${NC}"
-echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo -e "  Dev tips:"
+echo -e "    ${CYAN}npm run dev${NC}           – watch mode (auto-rebuild on change)"
+echo -e "    ${CYAN}$0 --clean${NC}  – clean reinstall"
 echo ""
