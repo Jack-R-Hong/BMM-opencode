@@ -32,9 +32,20 @@ curl -s https://raw.githubusercontent.com/Jack-R-Hong/BMM-opencode/refs/heads/ma
 
 After installation, you have access to:
 
-1. **Plugin Tools** - Use `bmm_list`, `bmm_agent`, `bmm_skill` directly
+1. **Plugin Tools** - Use `bmm_list`, `bmm_agent`, `bmm_skill`, `bmm_agent_workflows`, `bmm_suggest_workflows` directly
 2. **19 Specialized Agents** - After `bmm_install`, switch agents using `Tab` key
 3. **61 Workflow Skills** - After `bmm_install`, load skills via slash commands like `/bmad-bmm-create-prd`
+
+### New: Workflow Suggestions for Agents
+
+When you @mention an agent, you can now discover their available workflows:
+
+```
+Use bmm_suggest_workflows with agent bmm-dev to see available workflows
+Use bmm_agent_workflows to see all agent-workflow mappings
+```
+
+This helps OpenCode provide better autocomplete suggestions when mentioning agents.
 
 ---
 
@@ -115,7 +126,19 @@ After installation, you have access to:
 Use bmm_list to see all available agents and skills
 Use bmm_skill with name bmad-bmm-create-prd to get the PRD creation workflow
 Use bmm_install to copy everything to my project
+Use bmm_agent_workflows to see all agent-workflow mappings
+Use bmm_suggest_workflows with agent bmm-dev to see workflows for a specific agent
 ```
+
+#### Discover Agent Workflows
+
+The plugin now provides tools to discover which workflows are available for each agent:
+
+- **`bmm_agent_workflows`**: Lists all agents with their available workflows
+- **`bmm_suggest_workflows({ agent: "bmm-dev" })`**: Get detailed workflow information for a specific agent
+- **`bmm_agent({ name: "bmm-pm" })`**: Now includes workflow information in the agent details
+
+These tools enable OpenCode to provide intelligent autocomplete suggestions when you @mention agents.
 
 ### Switch to an agent (after bmm_install)
 

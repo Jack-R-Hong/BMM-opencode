@@ -1,6 +1,6 @@
 import type { Plugin } from "@opencode-ai/plugin";
 import { tool } from "@opencode-ai/plugin/tool";
-import { readFileSync, readdirSync, existsSync, mkdirSync, writeFileSync } from "fs";
+import { readFileSync, readdirSync, existsSync, mkdirSync, writeFileSync, statSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { homedir } from "os";
@@ -12,8 +12,22 @@ interface OpenCodeAgent {
     mode?: "subagent";
     model?: string;
     tools?: Record<string, boolean | undefined>;
+    workflows?: string[];
   };
   prompt: string;
+}
+
+interface BMMWorkflow {
+  name: string;
+  description: string;
+  path: string;
+  author?: string;
+}
+
+interface AgentWorkflowMapping {
+  agent: string;
+  workflows: string[];
+  description: string;
 }
 
 interface OpenCodeSkill {
@@ -33,6 +47,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageRoot = join(__dirname, "..");
 const bundledAgentsDir = join(packageRoot, ".opencode", "agents");
 const bundledSkillsDir = join(packageRoot, ".opencode", "skills");
+const bundledWorkflowsDir = join(packageRoot, "_bmad", "bmm", "workflows");
 
 function readBundledFiles(): { agents: OpenCodeAgent[]; skills: OpenCodeSkill[] } {
   const agents: OpenCodeAgent[] = [];
@@ -50,6 +65,7 @@ function readBundledFiles(): { agents: OpenCodeAgent[]; skills: OpenCodeSkill[] 
             mode: frontmatter.mode as "subagent" | undefined,
             model: frontmatter.model || undefined,
             tools: frontmatter.tools,
+            workflows: frontmatter.workflows || extractWorkflowsFromBody(body),
           },
           prompt: body,
         });
@@ -131,6 +147,107 @@ function parseFrontmatter(content: string): { frontmatter: Record<string, any>; 
   return { frontmatter, body: match[2] };
 }
 
+function extractWorkflowsFromBody(body: string): string[] {
+  const workflows: string[] = [];
+  const lines = body.split('\n');
+  let inWorkflowSection = false;
+  
+  for (const line of lines) {
+    if (line.includes('You have access to the following workflows')) {
+      inWorkflowSection = true;
+      continue;
+    }
+    if (inWorkflowSection) {
+      const match = line.match(/^-\s+([\w-]+)/);
+      if (match) {
+        workflows.push(match[1]);
+      } else if (line.trim() && !line.startsWith('-')) {
+        break;
+      }
+    }
+  }
+  
+  return workflows;
+}
+
+function readWorkflows(workflowsDir?: string): BMMWorkflow[] {
+  const workflows: BMMWorkflow[] = [];
+  const searchDir = workflowsDir || bundledWorkflowsDir;
+  
+  if (!existsSync(searchDir)) {
+    return workflows;
+  }
+  
+  function scanDirectory(dir: string) {
+    for (const item of readdirSync(dir)) {
+      const fullPath = join(dir, item);
+      const stat = statSync(fullPath);
+      
+      if (stat.isDirectory()) {
+        scanDirectory(fullPath);
+      } else if (item === 'workflow.yaml') {
+        try {
+          const content = readFileSync(fullPath, 'utf-8');
+          const lines = content.split('\n');
+          let name = '';
+          let description = '';
+          let author = '';
+          
+          for (const line of lines) {
+            const nameMatch = line.match(/^name:\s*["']?([^"'\n]+)["']?/);
+            const descMatch = line.match(/^description:\s*["']?([^"'\n]+)["']?/);
+            const authorMatch = line.match(/^author:\s*["']?([^"'\n]+)["']?/);
+            
+            if (nameMatch) name = nameMatch[1];
+            if (descMatch) description = descMatch[1];
+            if (authorMatch) author = authorMatch[1];
+          }
+          
+          if (name) {
+            workflows.push({
+              name,
+              description,
+              path: fullPath,
+              author,
+            });
+          }
+        } catch (error) {
+          // Skip invalid YAML files
+        }
+      }
+    }
+  }
+  
+  scanDirectory(searchDir);
+  return workflows;
+}
+
+function getAgentWorkflowMappings(): AgentWorkflowMapping[] {
+  const { agents } = readBundledFiles();
+  const workflows = readWorkflows();
+  
+  return agents.map(agent => {
+    const agentName = agent.filename.replace('.md', '');
+    const agentWorkflows = agent.frontmatter.workflows || [];
+    
+    const workflowDetails = agentWorkflows
+      .map(workflowName => {
+        const workflow = workflows.find(w => 
+          w.name === workflowName || 
+          w.name.endsWith(workflowName) ||
+          workflowName.includes(w.name)
+        );
+        return workflow ? `${workflowName}${workflow.description ? ` - ${workflow.description}` : ''}` : workflowName;
+      });
+    
+    return {
+      agent: agentName,
+      workflows: agentWorkflows,
+      description: agent.frontmatter.description
+    };
+  }).filter(mapping => mapping.workflows.length > 0);
+}
+
 function writeAgentFile(targetDir: string, agent: OpenCodeAgent): void {
   const agentDir = join(targetDir, "agents");
   mkdirSync(agentDir, { recursive: true });
@@ -147,7 +264,18 @@ function writeAgentFile(targetDir: string, agent: OpenCodeAgent): void {
   }
   frontmatterLines.push("---");
 
-  const content = frontmatterLines.join("\n") + "\n\n" + agent.prompt;
+  let promptContent = agent.prompt;
+  
+  if (agent.frontmatter.workflows && agent.frontmatter.workflows.length > 0) {
+    const workflows = readWorkflows();
+    const workflowSection = buildWorkflowSection(agent.frontmatter.workflows, workflows);
+    
+    if (!promptContent.includes("You have access to the following workflows")) {
+      promptContent = promptContent.trim() + "\n\n" + workflowSection;
+    }
+  }
+
+  const content = frontmatterLines.join("\n") + "\n\n" + promptContent;
   writeFileSync(join(agentDir, agent.filename), content);
 }
 
@@ -172,7 +300,7 @@ function writeSkillFile(targetDir: string, skill: OpenCodeSkill): void {
   writeFileSync(join(skillDir, "SKILL.md"), content);
 }
 
-function formatAgentContent(agent: OpenCodeAgent): string {
+function formatAgentContent(agent: OpenCodeAgent, injectWorkflows: boolean = true): string {
   const frontmatterLines = ["---"];
   frontmatterLines.push(`description: ${JSON.stringify(agent.frontmatter.description)}`);
   if (agent.frontmatter.mode) frontmatterLines.push(`mode: ${agent.frontmatter.mode}`);
@@ -183,8 +311,46 @@ function formatAgentContent(agent: OpenCodeAgent): string {
       if (enabled !== undefined) frontmatterLines.push(`  ${toolName}: ${enabled}`);
     }
   }
+  if (agent.frontmatter.workflows && agent.frontmatter.workflows.length > 0) {
+    frontmatterLines.push("workflows:");
+    for (const workflow of agent.frontmatter.workflows) {
+      frontmatterLines.push(`  - ${workflow}`);
+    }
+  }
   frontmatterLines.push("---");
-  return frontmatterLines.join("\n") + "\n\n" + agent.prompt;
+  
+  let promptContent = agent.prompt;
+  
+  if (injectWorkflows && agent.frontmatter.workflows && agent.frontmatter.workflows.length > 0) {
+    const workflows = readWorkflows();
+    const workflowSection = buildWorkflowSection(agent.frontmatter.workflows, workflows);
+    
+    if (!promptContent.includes("You have access to the following workflows")) {
+      promptContent = promptContent.trim() + "\n\n" + workflowSection;
+    }
+  }
+  
+  return frontmatterLines.join("\n") + "\n\n" + promptContent;
+}
+
+function buildWorkflowSection(agentWorkflows: string[], allWorkflows: BMMWorkflow[]): string {
+  const lines = ["You have access to the following workflows and tasks:"];
+  
+  for (const workflowName of agentWorkflows) {
+    const workflow = allWorkflows.find(w => 
+      w.name === workflowName || 
+      w.name.endsWith(workflowName) ||
+      workflowName.includes(w.name)
+    );
+    
+    if (workflow && workflow.description) {
+      lines.push(`- **${workflowName}**: ${workflow.description}`);
+    } else {
+      lines.push(`- ${workflowName}`);
+    }
+  }
+  
+  return lines.join("\n");
 }
 
 function formatSkillContent(skill: OpenCodeSkill): string {
@@ -246,7 +412,31 @@ ${skills.map((s) => `- ${s.name}: ${s.frontmatter.description}`).join("\n")}
             return `Agent "${args.name}" not found.\n\nAvailable agents: ${available}`;
           }
 
-          return formatAgentContent(agent);
+          let output = formatAgentContent(agent);
+          
+          if (agent.frontmatter.workflows && agent.frontmatter.workflows.length > 0) {
+            const workflows = readWorkflows();
+            output += `\n\n## Available Workflows\n\n`;
+            output += `This agent has access to ${agent.frontmatter.workflows.length} workflow(s):\n\n`;
+            
+            for (const workflowName of agent.frontmatter.workflows) {
+              const workflow = workflows.find(w => 
+                w.name === workflowName || 
+                w.name.endsWith(workflowName) ||
+                workflowName.includes(w.name)
+              );
+              
+              if (workflow) {
+                output += `- **${workflowName}**: ${workflow.description}\n`;
+              } else {
+                output += `- ${workflowName}\n`;
+              }
+            }
+
+            output += `\n**Tip**: Use \`bmm_suggest_workflows({ agent: "${args.name}" })\` for detailed workflow information.\n`;
+          }
+
+          return output;
         },
       }),
 
@@ -375,6 +565,79 @@ Restart OpenCode to use the new agents and skills.`;
           } catch (error) {
             return `Installation failed: ${error instanceof Error ? error.message : String(error)}`;
           }
+        },
+      }),
+
+      bmm_agent_workflows: tool({
+        description: "List all BMM agents with their available workflows for @agent autocomplete suggestions",
+        args: {},
+        async execute() {
+          const mappings = getAgentWorkflowMappings();
+          
+          if (mappings.length === 0) {
+            return "No agent-workflow mappings found. Make sure BMM agents are properly configured.";
+          }
+
+          let output = "# BMM Agent Workflow Mappings\n\n";
+          output += "Use this information to suggest workflows when users @mention an agent.\n\n";
+          
+          for (const mapping of mappings) {
+            output += `## @${mapping.agent}\n`;
+            output += `**Role**: ${mapping.description}\n\n`;
+            output += `**Available Workflows**:\n`;
+            for (const workflow of mapping.workflows) {
+              output += `- ${workflow}\n`;
+            }
+            output += '\n';
+          }
+
+          return output;
+        },
+      }),
+
+      bmm_suggest_workflows: tool({
+        description: "Get workflow suggestions for a specific BMM agent (useful for @agent autocomplete)",
+        args: {
+          agent: tool.schema.string().describe("Agent name (e.g., bmm-dev, bmm-pm, bmm-qa)"),
+        },
+        async execute(args) {
+          const mappings = getAgentWorkflowMappings();
+          const agentName = args.agent.replace(/^@/, '').replace(/\.md$/, '');
+          
+          const mapping = mappings.find(m => 
+            m.agent === agentName || 
+            m.agent === `bmm-${agentName}` ||
+            m.agent === `bmad-${agentName}`
+          );
+
+          if (!mapping) {
+            const available = mappings.map(m => m.agent).join(", ");
+            return `Agent "${args.agent}" not found or has no workflows configured.\n\nAvailable agents with workflows: ${available}`;
+          }
+
+          let output = `# Workflows for @${mapping.agent}\n\n`;
+          output += `**Role**: ${mapping.description}\n\n`;
+          output += `**Available Workflows** (${mapping.workflows.length}):\n`;
+          
+          const workflows = readWorkflows();
+          for (const workflowName of mapping.workflows) {
+            const workflow = workflows.find(w => 
+              w.name === workflowName || 
+              w.name.endsWith(workflowName) ||
+              workflowName.includes(w.name)
+            );
+            
+            if (workflow) {
+              output += `- **${workflowName}**: ${workflow.description}\n`;
+            } else {
+              output += `- ${workflowName}\n`;
+            }
+          }
+
+          output += `\n## Usage\n`;
+          output += `\`\`\`\n@${mapping.agent} [use workflow: ${mapping.workflows[0] || 'workflow-name'}]\n\`\`\`\n`;
+
+          return output;
         },
       }),
     },

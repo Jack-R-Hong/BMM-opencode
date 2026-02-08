@@ -17,29 +17,31 @@ describe("BMM-OpenCode Plugin", async () => {
     assert.strictEqual(typeof plugin, "function");
   });
 
-  test("returns 4 tools", async () => {
+  test("returns 6 tools", async () => {
     const result = await loadPlugin();
     const tools = Object.keys(result.tool);
     assert.deepStrictEqual(tools.sort(), [
       "bmm_agent",
+      "bmm_agent_workflows",
       "bmm_install",
       "bmm_list",
       "bmm_skill",
+      "bmm_suggest_workflows",
     ]);
   });
 });
 
 describe("bmm_list", async () => {
-  test("lists 19 agents", async () => {
+  test("lists 10 agents", async () => {
     const result = await loadPlugin();
     const output = await result.tool.bmm_list.execute({});
-    assert.ok(output.includes("## Agents (19)"));
+    assert.ok(output.includes("## Agents (10)"));
   });
 
-  test("lists 62 skills", async () => {
+  test("lists 41 skills", async () => {
     const result = await loadPlugin();
     const output = await result.tool.bmm_list.execute({});
-    assert.ok(output.includes("## Skills (62)"));
+    assert.ok(output.includes("## Skills (41)"));
   });
 });
 
@@ -48,7 +50,7 @@ describe("bmm_agent", async () => {
     const result = await loadPlugin();
     const output = await result.tool.bmm_agent.execute({ name: "bmm-dev" });
     assert.ok(output.includes("Developer Agent"));
-    assert.ok(output.includes("Amelia"));
+    assert.ok(output.includes("Senior Software Engineer"));
   });
 
   test("returns error for invalid name", async () => {
@@ -88,8 +90,8 @@ describe("bmm_install", async () => {
       );
 
       assert.ok(output.includes("Successfully installed"));
-      assert.ok(output.includes("19 agents"));
-      assert.ok(output.includes("62 skills"));
+      assert.ok(output.includes("10 agents"));
+      assert.ok(output.includes("41 skills"));
 
       assert.ok(existsSync(join(targetDir, "agents")));
       assert.ok(existsSync(join(targetDir, "skills")));
@@ -97,8 +99,8 @@ describe("bmm_install", async () => {
       const agents = readdirSync(join(targetDir, "agents"));
       const skills = readdirSync(join(targetDir, "skills"));
 
-      assert.strictEqual(agents.length, 19);
-      assert.strictEqual(skills.length, 62);
+      assert.strictEqual(agents.length, 10);
+      assert.strictEqual(skills.length, 41);
     } finally {
       rmSync(tempDir, { recursive: true, force: true });
     }

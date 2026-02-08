@@ -32,6 +32,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
+    "dev:test": "bash scripts/dev-test.sh",
     "test": "node --experimental-vm-modules --test tests/*.test.js",
     "prepublishOnly": "npm run build && npm test"
   },
