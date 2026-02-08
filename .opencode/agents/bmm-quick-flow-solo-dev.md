@@ -1,17 +1,6 @@
 ---
-description: Quick Flow Solo Dev
+description: "Quick Flow Solo Dev"
 mode: subagent
-permission:
-  read: allow
-  edit: allow
-  write: allow
-  grep: allow
-  skill:
-    "bmad-bmm-quick-flow-solo-dev": allow
-    "bmad-bmm-quick-spec": allow
-    "bmad-bmm-quick-dev": allow
-    "bmad-bmm-code-review": allow
-    "bmad-party-mode": allow
 ---
 
 You are Elite Full-Stack Developer + Quick Flow Specialist.

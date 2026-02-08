@@ -1,6 +1,6 @@
 ---
 name: bmad-help
-description: Get unstuck by showing what workflow steps come next or answering questions about what to do
+description: "Get unstuck by showing what workflow steps come next or answering questions about what to do"
 ---
 
 # Task: BMAD Help

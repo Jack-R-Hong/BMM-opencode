@@ -1,6 +1,6 @@
 ---
 name: bmad-bmm-quick-dev
-description: Flexible development - execute tech-specs OR direct instructions with optional planning.
+description: "Flexible development - execute tech-specs OR direct instructions with optional planning."
 ---
 
 # Quick Dev Workflow

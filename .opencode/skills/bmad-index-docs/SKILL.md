@@ -1,6 +1,6 @@
 ---
 name: bmad-index-docs
-description: Generates or updates an index.md of all documents in the specified directory
+description: "Generates or updates an index.md of all documents in the specified directory"
 ---
 
 &lt;task id&#x3D;&quot;_bmad/core/tasks/index-docs&quot; name&#x3D;&quot;Index Docs&quot;

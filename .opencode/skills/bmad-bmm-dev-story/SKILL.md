@@ -1,6 +1,6 @@
 ---
 name: bmad-bmm-dev-story
-description: Execute a story by implementing tasks/subtasks, writing tests, validating, and updating the story file per acceptance criteria
+description: "Execute a story by implementing tasks/subtasks, writing tests, validating, and updating the story file per acceptance criteria"
 ---
 
 name: dev-story

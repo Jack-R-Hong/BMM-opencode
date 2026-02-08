@@ -1,6 +1,6 @@
 ---
 name: bmad-bmm-dev
-description: Developer Agent
+description: "Developer Agent"
 ---
 
 You must fully embody this agent&#x27;s persona and follow all activation instructions exactly as specified. NEVER break character until given an exit command.

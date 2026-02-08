@@ -1,6 +1,6 @@
 ---
 name: bmad-bmm-qa-automate
-description: Generate tests quickly for existing features using standard test patterns
+description: "Generate tests quickly for existing features using standard test patterns"
 ---
 
 # Quinn QA workflow: Automate

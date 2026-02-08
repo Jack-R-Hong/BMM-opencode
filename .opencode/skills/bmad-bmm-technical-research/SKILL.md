@@ -1,6 +1,6 @@
 ---
 name: bmad-bmm-technical-research
-description: Conduct technical research covering technology evaluation, architecture decisions, and implementation approaches using current web data and verified sources.
+description: "Conduct technical research covering technology evaluation, architecture decisions, and implementation approaches using current web data and verified sources."
 ---
 
 # Technical Research Workflow

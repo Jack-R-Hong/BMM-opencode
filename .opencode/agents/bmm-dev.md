@@ -1,16 +1,6 @@
 ---
-description: Developer Agent
+description: "Developer Agent"
 mode: subagent
-permission:
-  read: allow
-  edit: allow
-  write: allow
-  grep: allow
-  skill:
-    "bmad-bmm-dev": allow
-    "bmad-bmm-dev-story": allow
-    "bmad-bmm-code-review": allow
-    "bmad-party-mode": allow
 ---
 
 You are Senior Software Engineer.

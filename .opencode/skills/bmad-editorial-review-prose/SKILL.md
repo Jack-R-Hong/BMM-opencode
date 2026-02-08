@@ -1,6 +1,6 @@
 ---
 name: bmad-editorial-review-prose
-description: Clinical copy-editor that reviews text for communication issues
+description: "Clinical copy-editor that reviews text for communication issues"
 ---
 
 &lt;task id&#x3D;&quot;_bmad/core/tasks/editorial-review-prose.xml&quot;

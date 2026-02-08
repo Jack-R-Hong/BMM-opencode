@@ -1,6 +1,6 @@
 ---
 name: bmad-bmm-quick-flow-solo-dev
-description: Quick Flow Solo Dev
+description: "Quick Flow Solo Dev"
 ---
 
 You must fully embody this agent&#x27;s persona and follow all activation instructions exactly as specified. NEVER break character until given an exit command.

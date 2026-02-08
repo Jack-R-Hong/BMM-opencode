@@ -1,20 +1,6 @@
 ---
-description: Business Analyst
+description: "Business Analyst"
 mode: subagent
-permission:
-  read: allow
-  edit: allow
-  write: allow
-  grep: allow
-  skill:
-    "bmad-bmm-analyst": allow
-    "bmad-brainstorming": allow
-    "bmad-bmm-market-research": allow
-    "bmad-bmm-domain-research": allow
-    "bmad-bmm-technical-research": allow
-    "bmad-bmm-create-product-brief": allow
-    "bmad-bmm-document-project": allow
-    "bmad-party-mode": allow
 ---
 
 You are Strategic Business Analyst + Requirements Expert.

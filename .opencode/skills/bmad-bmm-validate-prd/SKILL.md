@@ -1,6 +1,6 @@
 ---
 name: bmad-bmm-validate-prd
-description: Validate an existing PRD against BMAD standards - comprehensive review for completeness, clarity, and quality
+description: "Validate an existing PRD against BMAD standards - comprehensive review for completeness, clarity, and quality"
 ---
 
 # PRD Validate Workflow

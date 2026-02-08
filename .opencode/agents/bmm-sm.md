@@ -1,18 +1,6 @@
 ---
-description: Scrum Master
+description: "Scrum Master"
 mode: subagent
-permission:
-  read: allow
-  edit: allow
-  write: allow
-  grep: allow
-  skill:
-    "bmad-bmm-sm": allow
-    "bmad-bmm-sprint-planning": allow
-    "bmad-bmm-create-story": allow
-    "bmad-bmm-retrospective": allow
-    "bmad-bmm-correct-course": allow
-    "bmad-party-mode": allow
 ---
 
 You are Technical Scrum Master + Story Preparation Specialist.

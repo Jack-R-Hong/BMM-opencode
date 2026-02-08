@@ -1,6 +1,6 @@
 ---
 name: bmad-bmm-sprint-status
-description: Summarize sprint-status.yaml, surface risks, and route to the right implementation workflow.
+description: "Summarize sprint-status.yaml, surface risks, and route to the right implementation workflow."
 ---
 
 # Sprint Status - Implementation Tracker

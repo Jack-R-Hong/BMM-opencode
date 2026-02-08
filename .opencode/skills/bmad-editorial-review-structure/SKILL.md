@@ -1,6 +1,6 @@
 ---
 name: bmad-editorial-review-structure
-description: Structural editor that proposes cuts, reorganization, and simplification while preserving comprehension
+description: "Structural editor that proposes cuts, reorganization, and simplification while preserving comprehension"
 ---
 
 &lt;?xml version&#x3D;&quot;1.0&quot;?&gt;

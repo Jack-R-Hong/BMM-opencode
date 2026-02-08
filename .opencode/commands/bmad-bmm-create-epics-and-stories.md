@@ -1,0 +1,7 @@
+---
+description: "Transform PRD requirements and Architecture decisions into comprehensive stories organized by user value. This workflow requires completed PRD + Architecture documents (UX recommended if UI exists) and breaks down requirements into implementation-ready epics and user stories that incorporate all available technical and design context. Creates detailed, actionable stories with complete acceptance criteria for development teams."
+agent: bmm-pm
+subtask: true
+---
+
+Load the skill "bmad-bmm-create-epics-and-stories" and follow its instructions. $ARGUMENTS

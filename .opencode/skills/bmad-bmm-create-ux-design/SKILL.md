@@ -1,6 +1,6 @@
 ---
 name: bmad-bmm-create-ux-design
-description: Work with a peer UX Design expert to plan your applications UX patterns, look and feel.
+description: "Work with a peer UX Design expert to plan your applications UX patterns, look and feel."
 ---
 
 # Create UX Design Workflow

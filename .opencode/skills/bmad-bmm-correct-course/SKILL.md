@@ -1,6 +1,6 @@
 ---
 name: bmad-bmm-correct-course
-description: Navigate significant changes during sprint execution by analyzing impact, proposing solutions, and routing for implementation
+description: "Navigate significant changes during sprint execution by analyzing impact, proposing solutions, and routing for implementation"
 ---
 
 # Correct Course - Sprint Change Management Workflow

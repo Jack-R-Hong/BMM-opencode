@@ -13,8 +13,16 @@ interface OpenCodeAgent {
     model?: string;
     tools?: Record<string, boolean | undefined>;
     workflows?: string[];
+    permittedSkills?: string[];
   };
   prompt: string;
+}
+
+interface CommandMapping {
+  commandName: string;
+  skillName: string;
+  agentName: string;
+  description: string;
 }
 
 interface BMMWorkflow {
@@ -66,6 +74,7 @@ function readBundledFiles(): { agents: OpenCodeAgent[]; skills: OpenCodeSkill[] 
             model: frontmatter.model || undefined,
             tools: frontmatter.tools,
             workflows: frontmatter.workflows || extractWorkflowsFromBody(body),
+            permittedSkills: extractPermittedSkills(content),
           },
           prompt: body,
         });
@@ -145,6 +154,40 @@ function parseFrontmatter(content: string): { frontmatter: Record<string, any>; 
   }
 
   return { frontmatter, body: match[2] };
+}
+
+function extractPermittedSkills(content: string): string[] {
+  const skills: string[] = [];
+  const lines = content.split('\n');
+  let inPermission = false;
+  let inSkill = false;
+  
+  for (const line of lines) {
+    if (line === '---' && skills.length > 0) break;
+    
+    if (line.match(/^permission:\s*$/)) {
+      inPermission = true;
+      continue;
+    }
+    if (inPermission && line.match(/^\s+skill:\s*$/)) {
+      inSkill = true;
+      continue;
+    }
+    if (inSkill) {
+      const skillMatch = line.match(/^\s+"([^"]+)":\s*allow/);
+      if (skillMatch) {
+        skills.push(skillMatch[1]);
+      } else if (line.match(/^\s+\w+:/) && !line.match(/^\s+"/)) {
+        inSkill = false;
+        inPermission = false;
+      } else if (line.match(/^\w/)) {
+        inSkill = false;
+        inPermission = false;
+      }
+    }
+  }
+  
+  return skills;
 }
 
 function extractWorkflowsFromBody(body: string): string[] {
@@ -353,6 +396,90 @@ function buildWorkflowSection(agentWorkflows: string[], allWorkflows: BMMWorkflo
   return lines.join("\n");
 }
 
+function getCommandMappings(): CommandMapping[] {
+  const { agents, skills } = readBundledFiles();
+  const mappings: CommandMapping[] = [];
+  const mappedSkills = new Set<string>();
+
+  const agentBaseSkills = new Set<string>();
+  for (const a of agents) {
+    const name = a.filename.replace('.md', '');
+    agentBaseSkills.add(`bmad-${name}`);
+    agentBaseSkills.add(name);
+  }
+  const skipSkills = new Set(['bmad-party-mode']);
+
+  for (const agent of agents) {
+    const agentName = agent.filename.replace('.md', '');
+    const permitted = agent.frontmatter.permittedSkills || [];
+    const workflows = agent.frontmatter.workflows || [];
+    const allSkillNames = [...new Set([...permitted, ...workflows])];
+
+    for (const skillName of allSkillNames) {
+      if (agentBaseSkills.has(skillName) || skipSkills.has(skillName)) continue;
+      if (mappedSkills.has(skillName)) continue;
+
+      const skill = skills.find(s => s.name === skillName || s.folder === skillName);
+      if (!skill) continue;
+
+      mappings.push({
+        commandName: skillName,
+        skillName: skillName,
+        agentName: agentName,
+        description: skill.frontmatter.description,
+      });
+      mappedSkills.add(skillName);
+    }
+  }
+
+  const standaloneSkills = [
+    'bmad-help',
+    'bmad-index-docs',
+    'bmad-shard-doc',
+    'bmad-editorial-review-prose',
+    'bmad-editorial-review-structure',
+    'bmad-review-adversarial-general',
+    'bmad-bmm-generate-project-context',
+    'bmad-bmm-sprint-status',
+  ];
+
+  for (const skillName of standaloneSkills) {
+    if (mappedSkills.has(skillName)) continue;
+    const skill = skills.find(s => s.name === skillName || s.folder === skillName);
+    if (!skill) continue;
+
+    mappings.push({
+      commandName: skillName,
+      skillName: skillName,
+      agentName: '',
+      description: skill.frontmatter.description,
+    });
+    mappedSkills.add(skillName);
+  }
+
+  return mappings;
+}
+
+function writeCommandFile(targetDir: string, mapping: CommandMapping): void {
+  const commandsDir = join(targetDir, "commands");
+  mkdirSync(commandsDir, { recursive: true });
+
+  const frontmatterLines = ["---"];
+  frontmatterLines.push(`description: ${JSON.stringify(mapping.description)}`);
+  if (mapping.agentName) {
+    frontmatterLines.push(`agent: ${mapping.agentName}`);
+    frontmatterLines.push(`subtask: true`);
+  }
+  frontmatterLines.push("---");
+
+  const prompt = mapping.agentName
+    ? `Load the skill "${mapping.skillName}" and follow its instructions. $ARGUMENTS`
+    : `Load the skill "${mapping.skillName}" and follow its instructions. $ARGUMENTS`;
+
+  const content = frontmatterLines.join("\n") + "\n\n" + prompt + "\n";
+  writeFileSync(join(commandsDir, `${mapping.commandName}.md`), content);
+}
+
 function formatSkillContent(skill: OpenCodeSkill): string {
   const frontmatterLines = ["---"];
   frontmatterLines.push(`name: ${skill.frontmatter.name}`);
@@ -374,10 +501,14 @@ export const BMMPlugin: Plugin = async () => {
     tool: {
       bmm_list: tool({
         description:
-          "List all available BMAD-METHOD agents and skills from bmm-opencode",
+          "List all available BMAD-METHOD agents, skills, and commands from bmm-opencode",
         args: {},
         async execute() {
           const { agents, skills } = readBundledFiles();
+          const commands = getCommandMappings();
+          
+          const agentCommands = commands.filter(c => c.agentName);
+          const standaloneCommands = commands.filter(c => !c.agentName);
           
           return `# BMM-OpenCode Resources
 
@@ -387,11 +518,20 @@ ${agents.map((a) => `- ${a.filename.replace(".md", "")}: ${a.frontmatter.descrip
 ## Skills (${skills.length})
 ${skills.map((s) => `- ${s.name}: ${s.frontmatter.description}`).join("\n")}
 
+## Commands (${commands.length})
+After \`bmm_install\`, type \`/\` in the TUI to see these workflow commands:
+
+### Agent Workflows (${agentCommands.length})
+${agentCommands.map((c) => `- \`/${c.commandName}\` → @${c.agentName}: ${c.description}`).join("\n")}
+
+### Standalone Utilities (${standaloneCommands.length})
+${standaloneCommands.map((c) => `- \`/${c.commandName}\`: ${c.description}`).join("\n")}
+
 ## Usage
 - Use \`bmm_agent\` tool to get agent definition
 - Use \`bmm_skill\` tool to get skill instructions
-- Use \`bmm_install\` with \`global=true\` to install globally (~/.config/opencode/)
-- Use \`bmm_install\` to install to current project (.opencode/)`;
+- Use \`bmm_install\` to install agents, skills, and commands
+- After install, use \`/command-name\` to invoke workflows directly`;
         },
       }),
 
@@ -550,18 +690,30 @@ Use \`force=true\` to overwrite, or remove existing files first.`;
               skillsCopied++;
             }
 
+            const commandMappings = getCommandMappings();
+            let commandsCopied = 0;
+            for (const mapping of commandMappings) {
+              writeCommandFile(targetBase, mapping);
+              commandsCopied++;
+            }
+
             const isGlobal = targetBase === globalConfigDir;
             const installType = isGlobal ? "globally" : "to project";
             const source = "from bundled files";
+            const targetCommands = join(targetBase, "commands");
             const autoNote = autoDetected ? `\n\nNote: Auto-detected existing global installation at ${globalConfigDir}` : "";
             
             return `Successfully installed BMM-OpenCode ${installType} (${targetBase}):
 - ${agentsCopied} agents copied to ${targetAgents}
 - ${skillsCopied} skills copied to ${targetSkills}
+- ${commandsCopied} commands copied to ${targetCommands}
 
 Source: ${source}${autoNote}
 
-Restart OpenCode to use the new agents and skills.`;
+After restart, type \`/\` to see all available workflow commands (e.g. \`/bmad-bmm-create-prd\`, \`/bmad-bmm-dev-story\`).
+Each command auto-routes to the correct agent and loads the workflow skill.
+
+Restart OpenCode to use the new agents, skills, and commands.`;
           } catch (error) {
             return `Installation failed: ${error instanceof Error ? error.message : String(error)}`;
           }

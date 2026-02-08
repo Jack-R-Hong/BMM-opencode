@@ -1,6 +1,6 @@
 ---
 name: bmad-bmm-quick-spec
-description: Conversational spec engineering - ask questions, investigate code, produce implementation-ready tech-spec.
+description: "Conversational spec engineering - ask questions, investigate code, produce implementation-ready tech-spec."
 ---
 
 # Quick-Spec Workflow

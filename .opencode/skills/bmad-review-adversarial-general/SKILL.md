@@ -1,6 +1,6 @@
 ---
 name: bmad-review-adversarial-general
-description: Cynically review content and produce findings
+description: "Cynically review content and produce findings"
 ---
 
 &lt;!-- if possible, run this in a separate subagent or process with read access to the project, 

@@ -1,6 +1,6 @@
 ---
 name: bmad-bmm-edit-prd
-description: Edit and improve an existing PRD - enhance clarity, completeness, and quality
+description: "Edit and improve an existing PRD - enhance clarity, completeness, and quality"
 ---
 
 # PRD Edit Workflow

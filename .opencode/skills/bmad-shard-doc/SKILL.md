@@ -1,6 +1,6 @@
 ---
 name: bmad-shard-doc
-description: Splits large markdown documents into smaller, organized files based on level 2 (default) sections
+description: "Splits large markdown documents into smaller, organized files based on level 2 (default) sections"
 ---
 
 &lt;task id&#x3D;&quot;_bmad/core/tasks/shard-doc&quot; name&#x3D;&quot;Shard Document&quot;

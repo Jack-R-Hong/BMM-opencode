@@ -1,6 +1,6 @@
 ---
 name: bmad-brainstorming
-description: Facilitate interactive brainstorming sessions using diverse creative techniques and ideation methods
+description: "Facilitate interactive brainstorming sessions using diverse creative techniques and ideation methods"
 ---
 
 # Brainstorming Session Workflow

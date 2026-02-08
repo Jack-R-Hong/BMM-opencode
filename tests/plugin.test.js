@@ -92,15 +92,19 @@ describe("bmm_install", async () => {
       assert.ok(output.includes("Successfully installed"));
       assert.ok(output.includes("10 agents"));
       assert.ok(output.includes("41 skills"));
+      assert.ok(output.includes("commands copied"));
 
       assert.ok(existsSync(join(targetDir, "agents")));
       assert.ok(existsSync(join(targetDir, "skills")));
+      assert.ok(existsSync(join(targetDir, "commands")));
 
       const agents = readdirSync(join(targetDir, "agents"));
       const skills = readdirSync(join(targetDir, "skills"));
+      const commands = readdirSync(join(targetDir, "commands"));
 
       assert.strictEqual(agents.length, 10);
       assert.strictEqual(skills.length, 41);
+      assert.ok(commands.length > 0, `Expected commands to be generated, got ${commands.length}`);
     } finally {
       rmSync(tempDir, { recursive: true, force: true });
     }
