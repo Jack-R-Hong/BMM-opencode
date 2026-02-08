@@ -1,24 +1,7 @@
 ---
 name: bmad-bmm-create-prd
-description: "Create a comprehensive PRD (Product Requirements Document) through structured workflow facilitation"
-license: MIT
-compatibility: opencode
-metadata:
-  source: "bmad-method"
-  module: "bmm"
-  workflow: "create-prd"
-  standalone: false
+description: Create a comprehensive PRD (Product Requirements Document) through structured workflow facilitation
 ---
-
-# create-prd Workflow
-
-Create a comprehensive PRD (Product Requirements Document) through structured workflow facilitation
-
-## How to Use
-
-This skill provides a structured workflow. Follow the steps below:
-
-## Instructions
 
 # PRD Create Workflow
 
@@ -37,7 +20,7 @@ This uses **step-file architecture** for disciplined execution:
 - **Micro-file Design**: Each step is a self contained instruction file that is a part of an overall workflow that must be followed exactly
 - **Just-In-Time Loading**: Only the current step file is in memory - never load future step files until told to do so
 - **Sequential Enforcement**: Sequence within the step files must be completed in order, no skipping or optimization allowed
-- **State Tracking**: Document progress in output file frontmatter using `stepsCompleted` array when a workflow produces a document
+- **State Tracking**: Document progress in output file frontmatter using &#x60;stepsCompleted&#x60; array when a workflow produces a document
 - **Append-Only Building**: Build documents by appending content as directed to the output file
 
 ### Step Processing Rules
@@ -45,8 +28,8 @@ This uses **step-file architecture** for disciplined execution:
 1. **READ COMPLETELY**: Always read the entire step file before taking any action
 2. **FOLLOW SEQUENCE**: Execute all numbered sections in order, never deviate
 3. **WAIT FOR INPUT**: If a menu is presented, halt and wait for user selection
-4. **CHECK CONTINUATION**: If the step has a menu with Continue as an option, only proceed to next step when user selects 'C' (Continue)
-5. **SAVE STATE**: Update `stepsCompleted` in frontmatter before loading next step
+4. **CHECK CONTINUATION**: If the step has a menu with Continue as an option, only proceed to next step when user selects &#x27;C&#x27; (Continue)
+5. **SAVE STATE**: Update &#x60;stepsCompleted&#x60; in frontmatter before loading next step
 6. **LOAD NEXT**: When directed, read fully and follow the next step file
 
 ### Critical Rules (NO EXCEPTIONS)
@@ -65,14 +48,14 @@ This uses **step-file architecture** for disciplined execution:
 
 Load and read full config from {main_config} and resolve:
 
-- `project_name`, `output_folder`, `planning_artifacts`, `user_name`
-- `communication_language`, `document_output_language`, `user_skill_level`
-- `date` as system-generated current datetime
+- &#x60;project_name&#x60;, &#x60;output_folder&#x60;, &#x60;planning_artifacts&#x60;, &#x60;user_name&#x60;
+- &#x60;communication_language&#x60;, &#x60;document_output_language&#x60;, &#x60;user_skill_level&#x60;
+- &#x60;date&#x60; as system-generated current datetime
 
-✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the configured `{communication_language}`.
+✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the configured &#x60;{communication_language}&#x60;.
 
 ### 2. Route to Create Workflow
 
-"**Create Mode: Creating a new PRD from scratch.**"
+&quot;**Create Mode: Creating a new PRD from scratch.**&quot;
 
-Read fully and follow: `{nextStep}` (steps-c/step-01-init.md)
+Read fully and follow: &#x60;{nextStep}&#x60; (steps-c/step-01-init.md)

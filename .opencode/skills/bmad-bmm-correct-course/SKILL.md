@@ -1,99 +1,61 @@
 ---
 name: bmad-bmm-correct-course
-description: "Navigate significant changes during sprint execution by analyzing impact, proposing solutions, and routing for implementation"
-license: MIT
-compatibility: opencode
-metadata:
-  source: "bmad-method"
-  module: "bmm"
-  workflow: "correct-course"
-  standalone: false
+description: Navigate significant changes during sprint execution by analyzing impact, proposing solutions, and routing for implementation
 ---
 
-# correct-course Workflow
+# Correct Course - Sprint Change Management Workflow
+name: &quot;correct-course&quot;
+description: &quot;Navigate significant changes during sprint execution by analyzing impact, proposing solutions, and routing for implementation&quot;
+author: &quot;BMad Method&quot;
 
-Navigate significant changes during sprint execution by analyzing impact, proposing solutions, and routing for implementation
+config_source: &quot;{project-root}/_bmad/bmm/config.yaml&quot;
+user_name: &quot;{config_source}:user_name&quot;
+communication_language: &quot;{config_source}:communication_language&quot;
+user_skill_level: &quot;{config_source}:user_skill_level&quot;
+document_output_language: &quot;{config_source}:document_output_language&quot;
+date: system-generated
+implementation_artifacts: &quot;{config_source}:implementation_artifacts&quot;
+planning_artifacts: &quot;{config_source}:planning_artifacts&quot;
+project_knowledge: &quot;{config_source}:project_knowledge&quot;
+output_folder: &quot;{implementation_artifacts}&quot;
+sprint_status: &quot;{implementation_artifacts}/sprint-status.yaml&quot;
 
-**Author:** BMad Method
+# Smart input file references - handles both whole docs and sharded docs
+# Priority: Whole document first, then sharded version
+# Strategy: Load project context for impact analysis
+input_file_patterns:
+  prd:
+    description: &quot;Product requirements for impact analysis&quot;
+    whole: &quot;{planning_artifacts}/*prd*.md&quot;
+    sharded: &quot;{planning_artifacts}/*prd*/*.md&quot;
+    load_strategy: &quot;FULL_LOAD&quot;
+  epics:
+    description: &quot;All epics to analyze change impact&quot;
+    whole: &quot;{planning_artifacts}/*epic*.md&quot;
+    sharded: &quot;{planning_artifacts}/*epic*/*.md&quot;
+    load_strategy: &quot;FULL_LOAD&quot;
+  architecture:
+    description: &quot;System architecture and decisions&quot;
+    whole: &quot;{planning_artifacts}/*architecture*.md&quot;
+    sharded: &quot;{planning_artifacts}/*architecture*/*.md&quot;
+    load_strategy: &quot;FULL_LOAD&quot;
+  ux_design:
+    description: &quot;UX design specification (if UI impacts)&quot;
+    whole: &quot;{planning_artifacts}/*ux*.md&quot;
+    sharded: &quot;{planning_artifacts}/*ux*/*.md&quot;
+    load_strategy: &quot;FULL_LOAD&quot;
+  tech_spec:
+    description: &quot;Technical specification&quot;
+    whole: &quot;{planning_artifacts}/*tech-spec*.md&quot;
+    load_strategy: &quot;FULL_LOAD&quot;
+  document_project:
+    description: &quot;Brownfield project documentation (optional)&quot;
+    sharded: &quot;{project_knowledge}/index.md&quot;
+    load_strategy: &quot;INDEX_GUIDED&quot;
 
-## How to Use
-
-This skill provides a structured workflow. Follow the steps below:
-
-## Workflow Steps
-
-### Step 1: Initialize Change Navigation
-
-**Actions:**
-- Confirm change trigger and gather user description of the issue
-- Ask: "What specific issue or change has been identified that requires navigation?"
-- Verify access to required project documents:
-- Ask user for mode preference:
-- Store mode selection for use throughout workflow
-
-### Step 2: Execute Change Analysis Checklist
-
-**Actions:**
-- Read fully and follow the systematic analysis from: {checklist}
-- Work through each checklist section interactively with the user
-- Record status for each checklist item:
-- Maintain running notes of findings and impacts discovered
-- Present checklist progress after each major section
-
-### Step 3: Draft Specific Change Proposals
-
-**Actions:**
-- Based on checklist findings, create explicit edit proposals for each identified artifact
-- For Story changes:
-- For PRD modifications:
-- For Architecture changes:
-- For UI/UX specification updates:
-- Present each edit proposal individually
-- Iterate on each proposal based on user feedback
-
-**Questions to ask:**
-- Review and refine this change? Options: Approve [a], Edit [e], Skip [s]
-
-### Step 4: Generate Sprint Change Proposal
-
-**Actions:**
-- Compile comprehensive Sprint Change Proposal document with following sections:
-- Section 1: Issue Summary
-- Section 2: Impact Analysis
-- Section 3: Recommended Approach
-- Section 4: Detailed Change Proposals
-- Section 5: Implementation Handoff
-- Present complete Sprint Change Proposal to user
-- Write Sprint Change Proposal document to {default_output_file}
-
-**Questions to ask:**
-- Review complete proposal. Continue [c] or Edit [e]?
-
-### Step 5: Finalize and Route for Implementation
-
-**Actions:**
-- Get explicit user approval for complete proposal
-- Gather specific feedback on what needs adjustment
-- Return to appropriate step to address concerns
-- Finalize Sprint Change Proposal document
-- Determine change scope classification:
-- Provide appropriate handoff based on scope:
-- Route to: Development team for direct implementation
-- Deliverables: Finalized edit proposals and implementation tasks
-- Route to: Product Owner / Scrum Master agents
-- Deliverables: Sprint Change Proposal + backlog reorganization plan
-- Route to: Product Manager / Solution Architect
-- Deliverables: Complete Sprint Change Proposal + escalation notice
-- Confirm handoff completion and next steps with user
-- Document handoff in workflow execution log
-
-**Questions to ask:**
-- Do you approve this Sprint Change Proposal for implementation? (yes/no/revise)
-
-### Step 6: Workflow Completion
-
-**Actions:**
-- Summarize workflow execution:
-- Confirm all deliverables produced:
-- Report workflow completion to user with personalized message: "✅ Correct Course workflow complete, {user_name}!"
-- Remind user of success criteria and next steps for implementation team
+installed_path: &quot;{project-root}/_bmad/bmm/workflows/4-implementation/correct-course&quot;
+template: false
+instructions: &quot;{installed_path}/instructions.md&quot;
+validation: &quot;{installed_path}/checklist.md&quot;
+checklist: &quot;{installed_path}/checklist.md&quot;
+default_output_file: &quot;{planning_artifacts}/sprint-change-proposal-{date}.md&quot;

@@ -4,55 +4,35 @@ import { readFileSync, readdirSync, existsSync, mkdirSync, writeFileSync } from 
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { homedir } from "os";
-import { convert } from "bmad-opencode-converter";
-import type { OpenCodeAgent, OpenCodeSkill } from "bmad-opencode-converter";
+
+interface OpenCodeAgent {
+  filename: string;
+  frontmatter: {
+    description: string;
+    mode?: "subagent";
+    model?: string;
+    tools?: Record<string, boolean | undefined>;
+  };
+  prompt: string;
+}
+
+interface OpenCodeSkill {
+  name: string;
+  folder: string;
+  frontmatter: {
+    name: string;
+    description: string;
+    license?: string;
+    compatibility?: string;
+    metadata?: Record<string, any>;
+  };
+  content: string;
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageRoot = join(__dirname, "..");
 const bundledAgentsDir = join(packageRoot, ".opencode", "agents");
 const bundledSkillsDir = join(packageRoot, ".opencode", "skills");
-const bmadSourceDir = join(packageRoot, "_bmad");
-
-interface ConversionCache {
-  agents: OpenCodeAgent[];
-  skills: OpenCodeSkill[];
-  timestamp: number;
-}
-
-let conversionCache: ConversionCache | null = null;
-const CACHE_TTL_MS = 60000;
-
-function hasBmadSource(): boolean {
-  return existsSync(join(bmadSourceDir, "_config", "agent-manifest.csv"));
-}
-
-async function getConvertedResources(): Promise<{ agents: OpenCodeAgent[]; skills: OpenCodeSkill[] }> {
-  if (conversionCache && Date.now() - conversionCache.timestamp < CACHE_TTL_MS) {
-    return { agents: conversionCache.agents, skills: conversionCache.skills };
-  }
-
-  if (hasBmadSource()) {
-    try {
-      const result = await convert({
-        sourceDir: bmadSourceDir,
-        outputDir: "",
-        verbose: false,
-      });
-      
-      conversionCache = {
-        agents: result.agents,
-        skills: result.skills,
-        timestamp: Date.now(),
-      };
-      
-      return { agents: result.agents, skills: result.skills };
-    } catch (err) {
-      console.error("Failed to convert from BMAD source:", err);
-    }
-  }
-
-  return readBundledFiles();
-}
 
 function readBundledFiles(): { agents: OpenCodeAgent[]; skills: OpenCodeSkill[] } {
   const agents: OpenCodeAgent[] = [];
@@ -231,11 +211,9 @@ export const BMMPlugin: Plugin = async () => {
           "List all available BMAD-METHOD agents and skills from bmm-opencode",
         args: {},
         async execute() {
-          const { agents, skills } = await getConvertedResources();
-          const source = hasBmadSource() ? "BMAD source (_bmad/)" : "bundled files (.opencode/)";
+          const { agents, skills } = readBundledFiles();
           
           return `# BMM-OpenCode Resources
-Source: ${source}
 
 ## Agents (${agents.length})
 ${agents.map((a) => `- ${a.filename.replace(".md", "")}: ${a.frontmatter.description}`).join("\n")}
@@ -257,7 +235,7 @@ ${skills.map((s) => `- ${s.name}: ${s.frontmatter.description}`).join("\n")}
           name: tool.schema.string().describe("Agent name (e.g., bmm-dev, bmm-pm)"),
         },
         async execute(args) {
-          const { agents } = await getConvertedResources();
+          const { agents } = readBundledFiles();
           const agent = agents.find(
             (a) => a.filename === `${args.name}.md` || 
                    a.filename.replace(".md", "") === args.name
@@ -278,7 +256,7 @@ ${skills.map((s) => `- ${s.name}: ${s.frontmatter.description}`).join("\n")}
           name: tool.schema.string().describe("Skill name (e.g., bmad-bmm-create-prd)"),
         },
         async execute(args) {
-          const { skills } = await getConvertedResources();
+          const { skills } = readBundledFiles();
           const skill = skills.find(
             (s) => s.name === args.name || s.folder === args.name
           );
@@ -368,7 +346,7 @@ To avoid confusion, consider removing one installation.`;
 Use \`force=true\` to overwrite, or remove existing files first.`;
             }
 
-            const { agents, skills } = await getConvertedResources();
+            const { agents, skills } = readBundledFiles();
 
             let agentsCopied = 0;
             for (const agent of agents) {
@@ -384,7 +362,7 @@ Use \`force=true\` to overwrite, or remove existing files first.`;
 
             const isGlobal = targetBase === globalConfigDir;
             const installType = isGlobal ? "globally" : "to project";
-            const source = hasBmadSource() ? "converted from BMAD source" : "from bundled files";
+            const source = "from bundled files";
             const autoNote = autoDetected ? `\n\nNote: Auto-detected existing global installation at ${globalConfigDir}` : "";
             
             return `Successfully installed BMM-OpenCode ${installType} (${targetBase}):

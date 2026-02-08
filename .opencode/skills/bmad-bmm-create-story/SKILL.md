@@ -1,35 +1,73 @@
 ---
 name: bmad-bmm-create-story
-description: "Create the next user story from epics+stories with enhanced context analysis and direct ready-for-dev marking"
-license: MIT
-compatibility: opencode
-metadata:
-  source: "bmad-method"
-  module: "bmm"
-  workflow: "create-story"
-  standalone: false
+description: Create the next user story from epics+stories with enhanced context analysis and direct ready-for-dev marking
 ---
 
-# create-story Workflow
+name: create-story
+description: &quot;Create the next user story from epics+stories with enhanced context analysis and direct ready-for-dev marking&quot;
+author: &quot;BMad&quot;
 
-Create the next user story from epics+stories with enhanced context analysis and direct ready-for-dev marking
+# Critical variables from config
+config_source: &quot;{project-root}/_bmad/bmm/config.yaml&quot;
+user_name: &quot;{config_source}:user_name&quot;
+communication_language: &quot;{config_source}:communication_language&quot;
+date: system-generated
+planning_artifacts: &quot;{config_source}:planning_artifacts&quot;
+implementation_artifacts: &quot;{config_source}:implementation_artifacts&quot;
+output_folder: &quot;{implementation_artifacts}&quot;
+story_dir: &quot;{implementation_artifacts}&quot;
 
-**Author:** BMad
+# Workflow components
+installed_path: &quot;{project-root}/_bmad/bmm/workflows/4-implementation/create-story&quot;
+template: &quot;{installed_path}/template.md&quot;
+instructions: &quot;{installed_path}/instructions.xml&quot;
+validation: &quot;{installed_path}/checklist.md&quot;
 
-## How to Use
+# Variables and inputs
+variables:
+  sprint_status: &quot;{implementation_artifacts}/sprint-status.yaml&quot; # Primary source for story tracking
+  epics_file: &quot;{planning_artifacts}/epics.md&quot; # Enhanced epics+stories with BDD and source hints
+  prd_file: &quot;{planning_artifacts}/prd.md&quot; # Fallback for requirements (if not in epics file)
+  architecture_file: &quot;{planning_artifacts}/architecture.md&quot; # Fallback for constraints (if not in epics file)
+  ux_file: &quot;{planning_artifacts}/*ux*.md&quot; # Fallback for UX requirements (if not in epics file)
+  story_title: &quot;&quot; # Will be elicited if not derivable
 
-This skill provides a structured workflow. Follow the steps below:
+# Project context
+project_context: &quot;**/project-context.md&quot;
 
-## Output Template
+default_output_file: &quot;{story_dir}/{{story_key}}.md&quot;
 
-Use the following template structure for output:
+# Smart input file references - Simplified for enhanced approach
+# The epics+stories file should contain everything needed with source hints
+input_file_patterns:
+  prd:
+    description: &quot;PRD (fallback - epics file should have most content)&quot;
+    whole: &quot;{planning_artifacts}/*prd*.md&quot;
+    sharded: &quot;{planning_artifacts}/*prd*/*.md&quot;
+    load_strategy: &quot;SELECTIVE_LOAD&quot; # Only load if needed
+  architecture:
+    description: &quot;Architecture (fallback - epics file should have relevant sections)&quot;
+    whole: &quot;{planning_artifacts}/*architecture*.md&quot;
+    sharded: &quot;{planning_artifacts}/*architecture*/*.md&quot;
+    load_strategy: &quot;SELECTIVE_LOAD&quot; # Only load if needed
+  ux:
+    description: &quot;UX design (fallback - epics file should have relevant sections)&quot;
+    whole: &quot;{planning_artifacts}/*ux*.md&quot;
+    sharded: &quot;{planning_artifacts}/*ux*/*.md&quot;
+    load_strategy: &quot;SELECTIVE_LOAD&quot; # Only load if needed
+  epics:
+    description: &quot;Enhanced epics+stories file with BDD and source hints&quot;
+    whole: &quot;{planning_artifacts}/*epic*.md&quot;
+    sharded: &quot;{planning_artifacts}/*epic*/*.md&quot;
+    load_strategy: &quot;SELECTIVE_LOAD&quot; # Only load needed epic
 
-```markdown
+## Template
+
 # Story {{epic_num}}.{{story_num}}: {{story_title}}
 
 Status: ready-for-dev
 
-<!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
+&lt;!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. --&gt;
 
 ## Story
 
@@ -61,7 +99,7 @@ so that {{benefit}}.
 
 ### References
 
-- Cite all technical details with source paths and sections, e.g. [Source: docs/<file>.md#Section]
+- Cite all technical details with source paths and sections, e.g. [Source: docs/&lt;file&gt;.md#Section]
 
 ## Dev Agent Record
 
@@ -75,4 +113,3 @@ so that {{benefit}}.
 
 ### File List
 
-```
