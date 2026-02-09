@@ -1,6 +1,6 @@
 import type { Plugin } from "@opencode-ai/plugin";
 import { tool } from "@opencode-ai/plugin/tool";
-import { readFileSync, readdirSync, existsSync, mkdirSync, writeFileSync, statSync } from "fs";
+import { readFileSync, readdirSync, existsSync, mkdirSync, writeFileSync, statSync, unlinkSync, rmdirSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { homedir } from "os";
@@ -56,6 +56,115 @@ const packageRoot = join(__dirname, "..");
 const bundledAgentsDir = join(packageRoot, ".opencode", "agents");
 const bundledSkillsDir = join(packageRoot, ".opencode", "skills");
 const bundledWorkflowsDir = join(packageRoot, "_bmad", "bmm", "workflows");
+
+interface BMMManifest {
+  version: string;
+  installedFiles: string[];
+}
+
+const MANIFEST_FILENAME = "bmm-opencode.json";
+
+function getPackageVersion(): string {
+  try {
+    const pkgPath = join(packageRoot, "package.json");
+    if (existsSync(pkgPath)) {
+      return JSON.parse(readFileSync(pkgPath, "utf-8")).version || "0.0.0";
+    }
+  } catch { /* fallback */ }
+  return "0.0.0";
+}
+
+function readManifest(targetDir: string): BMMManifest | null {
+  try {
+    const p = join(targetDir, MANIFEST_FILENAME);
+    if (existsSync(p)) return JSON.parse(readFileSync(p, "utf-8"));
+  } catch { /* fallback */ }
+  return null;
+}
+
+function writeManifest(targetDir: string, manifest: BMMManifest): void {
+  mkdirSync(targetDir, { recursive: true });
+  writeFileSync(join(targetDir, MANIFEST_FILENAME), JSON.stringify(manifest, null, 2));
+}
+
+function removeManifestFiles(targetDir: string): number {
+  const manifest = readManifest(targetDir);
+  if (!manifest) return 0;
+
+  let removed = 0;
+  for (const rel of manifest.installedFiles) {
+    const full = join(targetDir, rel);
+    try {
+      if (existsSync(full)) { unlinkSync(full); removed++; }
+      const parent = dirname(full);
+      if (existsSync(parent) && readdirSync(parent).length === 0) rmdirSync(parent);
+    } catch { /* skip */ }
+  }
+  try {
+    const skillsDir = join(targetDir, "skills");
+    if (existsSync(skillsDir) && readdirSync(skillsDir).length === 0) rmdirSync(skillsDir);
+  } catch { /* not empty */ }
+  try { unlinkSync(join(targetDir, MANIFEST_FILENAME)); } catch { /* skip */ }
+  return removed;
+}
+
+function resolveSkillTarget(directory: string): string {
+  const globalDir = join(homedir(), ".config", "opencode");
+  const localDir = join(directory, ".opencode");
+  if (readManifest(globalDir)) return globalDir;
+  if (readManifest(localDir)) return localDir;
+  return globalDir;
+}
+
+function autoInstallSkills(targetDir: string): { installed: boolean; skills: number } {
+  const ver = getPackageVersion();
+  const existing = readManifest(targetDir);
+  if (existing && existing.version === ver) return { installed: false, skills: 0 };
+  if (existing) removeManifestFiles(targetDir);
+
+  const { skills } = readBundledFiles();
+  const installedFiles: string[] = [];
+  for (const skill of skills) {
+    installedFiles.push(writeSkillFileTracked(targetDir, skill));
+  }
+  writeManifest(targetDir, { version: ver, installedFiles });
+  return { installed: true, skills: skills.length };
+}
+
+function writeSkillFileTracked(targetDir: string, skill: OpenCodeSkill): string {
+  const skillDir = join(targetDir, "skills", skill.folder);
+  mkdirSync(skillDir, { recursive: true });
+
+  const frontmatterLines = ["---"];
+  frontmatterLines.push(`name: ${skill.frontmatter.name}`);
+  frontmatterLines.push(`description: ${JSON.stringify(skill.frontmatter.description)}`);
+  if (skill.frontmatter.license) frontmatterLines.push(`license: ${skill.frontmatter.license}`);
+  if (skill.frontmatter.compatibility) frontmatterLines.push(`compatibility: ${skill.frontmatter.compatibility}`);
+  if (skill.frontmatter.metadata) {
+    frontmatterLines.push("metadata:");
+    for (const [key, value] of Object.entries(skill.frontmatter.metadata)) {
+      frontmatterLines.push(`  ${key}: ${JSON.stringify(value)}`);
+    }
+  }
+  frontmatterLines.push("---");
+
+  const content = frontmatterLines.join("\n") + "\n\n" + skill.content;
+  const relPath = join("skills", skill.folder, "SKILL.md");
+  writeFileSync(join(targetDir, relPath), content);
+  return relPath;
+}
+
+function buildAgentPrompt(agent: OpenCodeAgent): string {
+  let promptContent = agent.prompt;
+  if (agent.frontmatter.workflows && agent.frontmatter.workflows.length > 0) {
+    const workflows = readWorkflows();
+    const workflowSection = buildWorkflowSection(agent.frontmatter.workflows, workflows);
+    if (!promptContent.includes("You have access to the following workflows")) {
+      promptContent = promptContent.trim() + "\n\n" + workflowSection;
+    }
+  }
+  return promptContent;
+}
 
 function readBundledFiles(): { agents: OpenCodeAgent[]; skills: OpenCodeSkill[] } {
   const agents: OpenCodeAgent[] = [];
@@ -496,8 +605,50 @@ function formatSkillContent(skill: OpenCodeSkill): string {
   return frontmatterLines.join("\n") + "\n\n" + skill.content;
 }
 
-export const BMMPlugin: Plugin = async () => {
+export const BMMPlugin: Plugin = async ({ directory }) => {
+  const { agents } = readBundledFiles();
+
+  try {
+    autoInstallSkills(resolveSkillTarget(directory));
+  } catch { /* skills auto-install failed — still accessible via bmm_skill tool */ }
+
   return {
+    config: async (config: Record<string, any>) => {
+      if (!config.agent) config.agent = {};
+      for (const agent of agents) {
+        const name = agent.filename.replace(".md", "");
+        if (config.agent[name]) continue;
+        const entry: Record<string, any> = {
+          description: agent.frontmatter.description,
+          prompt: buildAgentPrompt(agent),
+        };
+        if (agent.frontmatter.mode) entry.mode = agent.frontmatter.mode;
+        if (agent.frontmatter.model) entry.model = agent.frontmatter.model;
+        if (agent.frontmatter.tools) {
+          const tools: Record<string, boolean> = {};
+          for (const [k, v] of Object.entries(agent.frontmatter.tools)) {
+            if (v !== undefined) tools[k] = v;
+          }
+          entry.tools = tools;
+        }
+        config.agent[name] = entry;
+      }
+
+      if (!config.command) config.command = {};
+      for (const cmd of getCommandMappings()) {
+        if (config.command[cmd.commandName]) continue;
+        const entry: Record<string, any> = {
+          template: `Load the skill "${cmd.skillName}" and follow its instructions. $ARGUMENTS`,
+          description: cmd.description,
+        };
+        if (cmd.agentName) {
+          entry.agent = cmd.agentName;
+          entry.subtask = true;
+        }
+        config.command[cmd.commandName] = entry;
+      }
+    },
+
     tool: {
       bmm_list: tool({
         description:
@@ -684,9 +835,10 @@ Use \`force=true\` to overwrite, or remove existing files first.`;
               agentsCopied++;
             }
 
+            const skillFiles: string[] = [];
             let skillsCopied = 0;
             for (const skill of skills) {
-              writeSkillFile(targetBase, skill);
+              skillFiles.push(writeSkillFileTracked(targetBase, skill));
               skillsCopied++;
             }
 
@@ -697,9 +849,10 @@ Use \`force=true\` to overwrite, or remove existing files first.`;
               commandsCopied++;
             }
 
+            writeManifest(targetBase, { version: getPackageVersion(), installedFiles: skillFiles });
+
             const isGlobal = targetBase === globalConfigDir;
             const installType = isGlobal ? "globally" : "to project";
-            const source = "from bundled files";
             const targetCommands = join(targetBase, "commands");
             const autoNote = autoDetected ? `\n\nNote: Auto-detected existing global installation at ${globalConfigDir}` : "";
             
@@ -707,16 +860,50 @@ Use \`force=true\` to overwrite, or remove existing files first.`;
 - ${agentsCopied} agents copied to ${targetAgents}
 - ${skillsCopied} skills copied to ${targetSkills}
 - ${commandsCopied} commands copied to ${targetCommands}
-
-Source: ${source}${autoNote}
-
-After restart, type \`/\` to see all available workflow commands (e.g. \`/bmad-bmm-create-prd\`, \`/bmad-bmm-dev-story\`).
-Each command auto-routes to the correct agent and loads the workflow skill.
-
-Restart OpenCode to use the new agents, skills, and commands.`;
+- Manifest: ${join(targetBase, MANIFEST_FILENAME)}
+${autoNote}
+Use \`bmm_uninstall\` to cleanly remove skill files.
+Agents and commands are also injected via config hook (auto-removed when plugin is removed).`;
           } catch (error) {
             return `Installation failed: ${error instanceof Error ? error.message : String(error)}`;
           }
+        },
+      }),
+
+      bmm_uninstall: tool({
+        description:
+          "Remove all BMM skill files that were auto-installed. Reads bmm-opencode.json manifest for clean removal.",
+        args: {
+          target: tool.schema
+            .string()
+            .optional()
+            .describe("Target directory to uninstall from (auto-detected if omitted)"),
+        },
+        async execute(args, context) {
+          const globalConfigDir = join(homedir(), ".config", "opencode");
+          const localConfigDir = join(context.directory, ".opencode");
+
+          const targets: string[] = [];
+          if (args.target) {
+            targets.push(args.target);
+          } else {
+            if (readManifest(globalConfigDir)) targets.push(globalConfigDir);
+            if (readManifest(localConfigDir)) targets.push(localConfigDir);
+          }
+
+          if (targets.length === 0) {
+            return `No BMM installation found. No ${MANIFEST_FILENAME} manifest in:\n- ${globalConfigDir}\n- ${localConfigDir}`;
+          }
+
+          const results: string[] = [];
+          for (const target of targets) {
+            const manifest = readManifest(target);
+            if (!manifest) continue;
+            const removed = removeManifestFiles(target);
+            results.push(`- ${target}: removed ${removed} skill files (was v${manifest.version})`);
+          }
+
+          return `BMM-OpenCode skill files uninstalled:\n${results.join("\n")}\n\nAgents and commands are injected via config hook — they disappear automatically when "bmm-opencode" is removed from opencode.json plugin list.`;
         },
       }),
 

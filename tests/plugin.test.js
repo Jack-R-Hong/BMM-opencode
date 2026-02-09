@@ -17,7 +17,7 @@ describe("BMM-OpenCode Plugin", async () => {
     assert.strictEqual(typeof plugin, "function");
   });
 
-  test("returns 6 tools", async () => {
+  test("returns 7 tools", async () => {
     const result = await loadPlugin();
     const tools = Object.keys(result.tool);
     assert.deepStrictEqual(tools.sort(), [
@@ -27,6 +27,7 @@ describe("BMM-OpenCode Plugin", async () => {
       "bmm_list",
       "bmm_skill",
       "bmm_suggest_workflows",
+      "bmm_uninstall",
     ]);
   });
 });
