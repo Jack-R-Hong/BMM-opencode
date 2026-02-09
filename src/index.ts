@@ -64,6 +64,25 @@ interface BMMManifest {
 
 const MANIFEST_FILENAME = "bmm-opencode.json";
 
+const KNOWN_MODELS: { id: string; provider: string; description: string }[] = [
+  // Anthropic
+  { id: "anthropic/claude-opus-4-6", provider: "Anthropic", description: "Most capable, complex reasoning & coding" },
+  { id: "anthropic/claude-sonnet-4-5", provider: "Anthropic", description: "Balanced performance & speed" },
+  { id: "anthropic/claude-haiku-4-5", provider: "Anthropic", description: "Fast & cost-effective" },
+  // OpenAI
+  { id: "openai/o3", provider: "OpenAI", description: "Advanced reasoning model" },
+  { id: "openai/o4-mini", provider: "OpenAI", description: "Fast reasoning model" },
+  { id: "openai/gpt-5.2-codex", provider: "OpenAI", description: "Coding-optimized GPT" },
+  { id: "openai/gpt-4.1", provider: "OpenAI", description: "General-purpose GPT" },
+  { id: "openai/gpt-4.1-mini", provider: "OpenAI", description: "Compact GPT" },
+  // Google
+  { id: "google/gemini-2.5-pro", provider: "Google", description: "Advanced multimodal model" },
+  { id: "google/gemini-2.5-flash", provider: "Google", description: "Fast multimodal model" },
+  // xAI
+  { id: "xai/grok-4", provider: "xAI", description: "Grok flagship model" },
+  { id: "xai/grok-3-mini", provider: "xAI", description: "Compact Grok model" },
+];
+
 function getPackageVersion(): string {
   try {
     const pkgPath = join(packageRoot, "package.json");
@@ -485,6 +504,66 @@ function formatAgentContent(agent: OpenCodeAgent, injectWorkflows: boolean = tru
   return frontmatterLines.join("\n") + "\n\n" + promptContent;
 }
 
+function syncSetModelCommands(directory: string): void {
+  const { agents } = readBundledFiles();
+  const commandDirs = [
+    join(bundledAgentsDir, "..", "commands"),
+    join(homedir(), ".config", "opencode", "commands"),
+    join(directory, ".opencode", "commands"),
+  ];
+
+  for (const cmdDir of commandDirs) {
+    if (!existsSync(cmdDir)) continue;
+
+    // Main command
+    writeFileSync(join(cmdDir, "bmad-bmm-set-model.md"),
+      `---\ndescription: "View all agent model assignments"\n---\n\n.\n`);
+
+    for (const agent of agents) {
+      const name = agent.filename.replace(".md", "");
+      const current = agent.frontmatter.model || "default";
+
+      // Per-agent command
+      writeFileSync(join(cmdDir, `bmad-bmm-set-model-${name}.md`),
+        `---\ndescription: "${name} -> ${current}"\n---\n\n.\n`);
+
+      // Per-agent-model commands
+      for (const m of KNOWN_MODELS) {
+        const modelSlug = m.id.replace(/\//g, "-");
+        const isCurrent = m.id === current;
+        writeFileSync(join(cmdDir, `bmad-bmm-set-model-${name}-${modelSlug}.md`),
+          `---\ndescription: "${name} -> ${m.id}${isCurrent ? " (current)" : ""}"\n---\n\n.\n`);
+      }
+    }
+  }
+}
+
+function updateModelInFrontmatter(content: string, newModel: string): string {
+  const match = content.match(/^(---\s*\n)([\s\S]*?)(\n---\s*\n)([\s\S]*)$/);
+  if (!match) return content;
+
+  const [, open, fm, close, body] = match;
+  const lines = fm.split("\n");
+  let replaced = false;
+
+  const updatedLines = lines.map((line) => {
+    if (line.match(/^model:\s/)) {
+      replaced = true;
+      return `model: ${newModel}`;
+    }
+    return line;
+  });
+
+  if (!replaced) {
+    // Insert model after description line, or as first line
+    const descIdx = updatedLines.findIndex((l) => l.match(/^description:\s/));
+    const insertAt = descIdx >= 0 ? descIdx + 1 : 0;
+    updatedLines.splice(insertAt, 0, `model: ${newModel}`);
+  }
+
+  return open + updatedLines.join("\n") + close + body;
+}
+
 function buildWorkflowSection(agentWorkflows: string[], allWorkflows: BMMWorkflow[]): string {
   const lines = ["You have access to the following workflows and tasks:"];
   
@@ -605,7 +684,7 @@ function formatSkillContent(skill: OpenCodeSkill): string {
   return frontmatterLines.join("\n") + "\n\n" + skill.content;
 }
 
-export const BMMPlugin: Plugin = async ({ directory }) => {
+export const BMMPlugin: Plugin = async ({ directory, client }) => {
   const { agents } = readBundledFiles();
 
   try {
@@ -647,6 +726,112 @@ export const BMMPlugin: Plugin = async ({ directory }) => {
         }
         config.command[cmd.commandName] = entry;
       }
+
+      // Register set-model commands: main + per-agent + per-agent-model
+      const freshAgents = readBundledFiles().agents;
+      if (!config.command["bmad-bmm-set-model"]) {
+        config.command["bmad-bmm-set-model"] = {
+          description: "View all agent model assignments",
+          template: ".",
+        };
+      }
+      for (const a of freshAgents) {
+        const name = a.filename.replace(".md", "");
+        const current = a.frontmatter.model || "default";
+        // Per-agent command
+        const agentCmd = `bmad-bmm-set-model-${name}`;
+        if (!config.command[agentCmd]) {
+          config.command[agentCmd] = {
+            description: `${name} -> ${current}`,
+            template: ".",
+          };
+        }
+        // Per-agent-model commands
+        for (const m of KNOWN_MODELS) {
+          const modelSlug = m.id.replace(/\//g, "-");
+          const modelCmd = `bmad-bmm-set-model-${name}-${modelSlug}`;
+          if (!config.command[modelCmd]) {
+            const isCurrent = m.id === current;
+            config.command[modelCmd] = {
+              description: `${name} -> ${m.id}${isCurrent ? " (current)" : ""}`,
+              template: ".",
+            };
+          }
+        }
+      }
+    },
+
+    "command.execute.before": async (input) => {
+      const SET_MODEL_PREFIX = "bmad-bmm-set-model";
+      if (!input.command.startsWith(SET_MODEL_PREFIX)) return;
+
+      // ALL set-model commands are handled here. Throw at the end to block LLM.
+      const sessionID = input.sessionID;
+      const suffix = input.command.length > SET_MODEL_PREFIX.length
+        ? input.command.slice(SET_MODEL_PREFIX.length + 1)
+        : "";
+
+      let result = "";
+
+      try {
+        const allAgents = readBundledFiles().agents;
+        const agentNames = allAgents.map((a) => a.filename.replace(".md", ""));
+
+        // Match agent name from suffix (longest first)
+        let matchedAgent = "";
+        let modelSlug = "";
+        if (suffix) {
+          const sorted = [...agentNames].sort((a, b) => b.length - a.length);
+          for (const name of sorted) {
+            if (suffix === name) { matchedAgent = name; break; }
+            if (suffix.startsWith(name + "-")) { matchedAgent = name; modelSlug = suffix.slice(name.length + 1); break; }
+          }
+        }
+
+        if (!suffix) {
+          // Level 1: show all agents
+          result = allAgents.map((a) => `${a.filename.replace(".md", "")}: ${a.frontmatter.model || "(default)"}`).join("\n");
+
+        } else if (matchedAgent && !modelSlug) {
+          // Level 2: show agent's model
+          const agent = allAgents.find((a) => a.filename.replace(".md", "") === matchedAgent);
+          result = `${matchedAgent}: ${agent?.frontmatter.model || "(default)"}`;
+
+        } else if (matchedAgent && modelSlug) {
+          // Level 3: apply model change
+          const agent = allAgents.find((a) => a.filename.replace(".md", "") === matchedAgent);
+          if (agent) {
+            const knownModel = KNOWN_MODELS.find((m) => m.id.replace(/\//g, "-") === modelSlug);
+            const modelId = knownModel ? knownModel.id : modelSlug.replace(/-/, "/");
+            const currentModel = agent.frontmatter.model || "(default)";
+
+            for (const loc of [
+              join(bundledAgentsDir, agent.filename),
+              join(homedir(), ".config", "opencode", "agents", agent.filename),
+              join(directory, ".opencode", "agents", agent.filename),
+            ]) {
+              if (existsSync(loc)) {
+                writeFileSync(loc, updateModelInFrontmatter(readFileSync(loc, "utf-8"), modelId));
+              }
+            }
+            syncSetModelCommands(directory);
+            result = `${matchedAgent}: ${currentModel} -> ${modelId}`;
+          }
+        }
+
+        // Show result in chat (noReply = no LLM response)
+        if (result) {
+          await client.session.prompt({
+            path: { id: sessionID },
+            body: { noReply: true, parts: [{ type: "text", text: result }] },
+          });
+        }
+      } catch {
+        // Ensure throw always happens even if something above fails
+      }
+
+      // ALWAYS throw to prevent LLM from running
+      throw new Error("set-model");
     },
 
     tool: {
@@ -849,6 +1034,9 @@ Use \`force=true\` to overwrite, or remove existing files first.`;
               commandsCopied++;
             }
 
+            // Write set-model commands (main + per-agent)
+            syncSetModelCommands(context.directory);
+
             writeManifest(targetBase, { version: getPackageVersion(), installedFiles: skillFiles });
 
             const isGlobal = targetBase === globalConfigDir;
@@ -931,6 +1119,138 @@ Agents and commands are also injected via config hook (auto-removed when plugin 
           }
 
           return output;
+        },
+      }),
+
+      bmm_set_model: tool({
+        description:
+          "Set the model for a BMM agent. Updates both bundled and installed agent files. Use agent='all' to set model for all agents. Omit model to show current assignments + available models.",
+        args: {
+          agent: tool.schema
+            .string()
+            .describe(
+              "Agent name (e.g., bmm-dev, bmm-pm) or 'all' to set/view all agents"
+            ),
+          model: tool.schema
+            .string()
+            .optional()
+            .describe(
+              "Model identifier (e.g., anthropic/claude-sonnet-4-5). Omit to show current model + available options."
+            ),
+        },
+        async execute(args, context) {
+          const { agents } = readBundledFiles();
+
+          // --- Helper: format available models list ---
+          function formatAvailableModels(): string {
+            const byProvider = new Map<string, typeof KNOWN_MODELS>();
+            for (const m of KNOWN_MODELS) {
+              if (!byProvider.has(m.provider)) byProvider.set(m.provider, []);
+              byProvider.get(m.provider)!.push(m);
+            }
+            let out = "## Available Models\n";
+            for (const [provider, models] of byProvider) {
+              out += `\n### ${provider}\n`;
+              for (const m of models) {
+                out += `- \`${m.id}\` — ${m.description}\n`;
+              }
+            }
+            out += "\nYou can also use any custom model identifier (e.g., `ollama/llama3`).\n";
+            return out;
+          }
+
+          // --- List mode: no model provided ---
+          if (!args.model) {
+            if (args.agent === "all") {
+              const lines = agents.map((a) => {
+                const name = a.filename.replace(".md", "");
+                return `| ${name} | \`${a.frontmatter.model || "(default)"}\` |`;
+              });
+              return `# Current Agent Models\n\n| Agent | Model |\n|-------|-------|\n${lines.join("\n")}\n\n${formatAvailableModels()}`;
+            }
+            const agentName = args.agent.replace(/^@/, "").replace(/\.md$/, "");
+            const agent = agents.find(
+              (a) =>
+                a.filename === `${agentName}.md` ||
+                a.filename.replace(".md", "") === agentName
+            );
+            if (!agent) {
+              const available = agents
+                .map((a) => a.filename.replace(".md", ""))
+                .join(", ");
+              return `Agent "${args.agent}" not found.\n\nAvailable agents: ${available}`;
+            }
+            return `Agent **${agentName}** current model: \`${agent.frontmatter.model || "(default)"}\`\n\n${formatAvailableModels()}`;
+          }
+
+          // --- Set mode ---
+          const model = args.model;
+          const targetAgents: OpenCodeAgent[] = [];
+
+          if (args.agent === "all") {
+            targetAgents.push(...agents);
+          } else {
+            const agentName = args.agent.replace(/^@/, "").replace(/\.md$/, "");
+            const agent = agents.find(
+              (a) =>
+                a.filename === `${agentName}.md` ||
+                a.filename.replace(".md", "") === agentName
+            );
+            if (!agent) {
+              const available = agents
+                .map((a) => a.filename.replace(".md", ""))
+                .join(", ");
+              return `Agent "${args.agent}" not found.\n\nAvailable agents: ${available}`;
+            }
+            targetAgents.push(agent);
+          }
+
+          const results: string[] = [];
+
+          for (const agent of targetAgents) {
+            const agentName = agent.filename.replace(".md", "");
+            const oldModel = agent.frontmatter.model || "(default)";
+
+            // 1. Update bundled agent file
+            const bundledPath = join(bundledAgentsDir, agent.filename);
+            if (existsSync(bundledPath)) {
+              const content = readFileSync(bundledPath, "utf-8");
+              const updated = updateModelInFrontmatter(content, model);
+              writeFileSync(bundledPath, updated);
+            }
+
+            // 2. Update installed agent files (global + local)
+            const globalAgentPath = join(
+              homedir(),
+              ".config",
+              "opencode",
+              "agents",
+              agent.filename
+            );
+            const localAgentPath = join(
+              context.directory,
+              ".opencode",
+              "agents",
+              agent.filename
+            );
+
+            for (const installedPath of [globalAgentPath, localAgentPath]) {
+              if (existsSync(installedPath)) {
+                const content = readFileSync(installedPath, "utf-8");
+                const updated = updateModelInFrontmatter(content, model);
+                writeFileSync(installedPath, updated);
+              }
+            }
+
+            results.push(
+              `- ${agentName}: ${oldModel} → ${model}`
+            );
+          }
+
+          // Sync command .md files so they reflect updated models
+          syncSetModelCommands(context.directory);
+
+          return `# Model Updated\n\n${results.join("\n")}\n\nChanges take effect on next agent invocation.`;
         },
       }),
 
