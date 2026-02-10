@@ -1,0 +1,282 @@
+{
+  "bmm-analyst": {
+    "description": "Business Analyst",
+    "prompt": "{file:./_bmad/bmm/agents/analyst.md}",
+    "mode": "subagent",
+    "model": "openai/gpt-5.2-codex",
+    "temperature": 0.6,
+    "top_p": 0.9,
+    "color": "#4FC3F7",
+    "hidden": false,
+    "tools": {
+      "write": true,
+      "edit": true,
+      "bash": false,
+      "webfetch": true,
+      "glob": true,
+      "grep": true,
+      "read": true,
+      "task": true,
+      "todowrite": true
+    },
+    "permission": {
+      "edit": "allow",
+      "bash": {
+        "*": "deny"
+      },
+      "webfetch": "allow"
+    }
+  },
+  "bmm-architect": {
+    "description": "Architect",
+    "prompt": "{file:./_bmad/bmm/agents/architect.md}",
+    "mode": "subagent",
+    "model": "anthropic/claude-opus-4-6",
+    "temperature": 0.3,
+    "top_p": 0.85,
+    "color": "#7E57C2",
+    "hidden": false,
+    "tools": {
+      "write": true,
+      "edit": true,
+      "bash": false,
+      "webfetch": true,
+      "glob": true,
+      "grep": true,
+      "read": true,
+      "task": true,
+      "todowrite": true
+    },
+    "permission": {
+      "edit": "allow",
+      "bash": {
+        "*": "deny"
+      },
+      "webfetch": "allow"
+    }
+  },
+  "bmm-dev": {
+    "description": "Developer Agent",
+    "prompt": "{file:./_bmad/bmm/agents/dev.md}",
+    "mode": "subagent",
+    "model": "anthropic/claude-opus-4-6",
+    "temperature": 0.15,
+    "top_p": 0.85,
+    "color": "#66BB6A",
+    "hidden": false,
+    "tools": {
+      "write": true,
+      "edit": true,
+      "bash": true,
+      "webfetch": true,
+      "glob": true,
+      "grep": true,
+      "read": true,
+      "task": true,
+      "todowrite": true
+    },
+    "permission": {
+      "edit": "allow",
+      "bash": {
+        "*": "allow"
+      },
+      "webfetch": "allow"
+    }
+  },
+  "bmm-pm": {
+    "description": "Product Manager",
+    "prompt": "{file:./_bmad/bmm/agents/pm.md}",
+    "mode": "subagent",
+    "model": "anthropic/claude-sonnet-4-5",
+    "temperature": 0.4,
+    "top_p": 0.9,
+    "color": "#FF7043",
+    "hidden": false,
+    "tools": {
+      "write": true,
+      "edit": true,
+      "bash": false,
+      "webfetch": true,
+      "glob": true,
+      "grep": true,
+      "read": true,
+      "task": true,
+      "todowrite": true
+    },
+    "permission": {
+      "edit": "allow",
+      "bash": {
+        "*": "deny"
+      },
+      "webfetch": "allow"
+    }
+  },
+  "bmm-qa": {
+    "description": "QA Engineer",
+    "prompt": "{file:./_bmad/bmm/agents/qa.md}",
+    "mode": "subagent",
+    "model": "anthropic/claude-sonnet-4-5",
+    "temperature": 0.1,
+    "top_p": 0.8,
+    "color": "#EF5350",
+    "hidden": false,
+    "tools": {
+      "write": true,
+      "edit": true,
+      "bash": true,
+      "webfetch": true,
+      "glob": true,
+      "grep": true,
+      "read": true,
+      "task": true,
+      "todowrite": true
+    },
+    "permission": {
+      "edit": "allow",
+      "bash": {
+        "*": "allow"
+      },
+      "webfetch": "allow"
+    }
+  },
+  "bmm-quick-flow-solo-dev": {
+    "description": "Quick Flow Solo Dev",
+    "prompt": "{file:./_bmad/bmm/agents/quick-flow-solo-dev.md}",
+    "mode": "subagent",
+    "model": "anthropic/claude-opus-4-6",
+    "temperature": 0.2,
+    "top_p": 0.85,
+    "color": "#26A69A",
+    "hidden": false,
+    "tools": {
+      "write": true,
+      "edit": true,
+      "bash": true,
+      "webfetch": true,
+      "glob": true,
+      "grep": true,
+      "read": true,
+      "task": true,
+      "todowrite": true
+    },
+    "permission": {
+      "edit": "allow",
+      "bash": {
+        "*": "allow"
+      },
+      "webfetch": "allow"
+    }
+  },
+  "bmm-sm": {
+    "description": "Scrum Master",
+    "prompt": "{file:./_bmad/bmm/agents/sm.md}",
+    "mode": "subagent",
+    "model": "anthropic/claude-sonnet-4-5",
+    "temperature": 0.3,
+    "top_p": 0.9,
+    "color": "#FFA726",
+    "hidden": false,
+    "tools": {
+      "write": true,
+      "edit": true,
+      "bash": false,
+      "webfetch": true,
+      "glob": true,
+      "grep": true,
+      "read": true,
+      "task": true,
+      "todowrite": true
+    },
+    "permission": {
+      "edit": "allow",
+      "bash": {
+        "*": "deny"
+      },
+      "webfetch": "allow"
+    }
+  },
+  "bmm-tech-writer": {
+    "description": "Technical Writer",
+    "prompt": "{file:./_bmad/bmm/agents/tech-writer/tech-writer.md}",
+    "mode": "subagent",
+    "model": "anthropic/claude-haiku-4-5",
+    "temperature": 0.35,
+    "top_p": 0.9,
+    "color": "#78909C",
+    "hidden": false,
+    "tools": {
+      "write": true,
+      "edit": true,
+      "bash": false,
+      "webfetch": true,
+      "glob": true,
+      "grep": true,
+      "read": true,
+      "task": true,
+      "todowrite": true
+    },
+    "permission": {
+      "edit": "allow",
+      "bash": {
+        "*": "deny"
+      },
+      "webfetch": "allow"
+    }
+  },
+  "bmm-ux-designer": {
+    "description": "UX Designer",
+    "prompt": "{file:./_bmad/bmm/agents/ux-designer.md}",
+    "mode": "subagent",
+    "model": "anthropic/claude-haiku-4-5",
+    "temperature": 0.5,
+    "top_p": 0.9,
+    "color": "#EC407A",
+    "hidden": false,
+    "tools": {
+      "write": true,
+      "edit": true,
+      "bash": false,
+      "webfetch": true,
+      "glob": true,
+      "grep": true,
+      "read": true,
+      "task": true,
+      "todowrite": true
+    },
+    "permission": {
+      "edit": "allow",
+      "bash": {
+        "*": "deny"
+      },
+      "webfetch": "allow"
+    }
+  },
+  "bmad-bmad-master": {
+    "description": "BMad Master Executor, Knowledge Custodian, and Workflow Orchestrator",
+    "prompt": "{file:./_bmad/core/agents/bmad-master.md}",
+    "mode": "primary",
+    "model": "anthropic/claude-opus-4-6",
+    "temperature": 0.2,
+    "top_p": 0.9,
+    "color": "#FFD700",
+    "hidden": false,
+    "tools": {
+      "write": true,
+      "edit": true,
+      "bash": true,
+      "webfetch": true,
+      "glob": true,
+      "grep": true,
+      "read": true,
+      "task": true,
+      "todowrite": true
+    },
+    "permission": {
+      "edit": "allow",
+      "bash": {
+        "*": "allow"
+      },
+      "webfetch": "allow"
+    }
+  }
+}

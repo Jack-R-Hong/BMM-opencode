@@ -9,13 +9,19 @@ interface OpenCodeAgent {
   filename: string;
   frontmatter: {
     description: string;
-    mode?: "subagent";
+    mode?: "subagent" | "primary" | "all";
     model?: string;
+    temperature?: number;
+    top_p?: number;
+    color?: string;
+    hidden?: boolean;
     tools?: Record<string, boolean | undefined>;
+    permission?: Record<string, any>;
     workflows?: string[];
     permittedSkills?: string[];
   };
   prompt: string;
+  promptRef?: string;
 }
 
 interface CommandMapping {
@@ -53,6 +59,7 @@ interface OpenCodeSkill {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageRoot = join(__dirname, "..");
+const bundledAgentsJson = join(packageRoot, ".opencode", "agents.json");
 const bundledAgentsDir = join(packageRoot, ".opencode", "agents");
 const bundledSkillsDir = join(packageRoot, ".opencode", "skills");
 const bundledWorkflowsDir = join(packageRoot, "_bmad", "bmm", "workflows");
@@ -185,30 +192,85 @@ function buildAgentPrompt(agent: OpenCodeAgent): string {
   return promptContent;
 }
 
-function readBundledFiles(): { agents: OpenCodeAgent[]; skills: OpenCodeSkill[] } {
-  const agents: OpenCodeAgent[] = [];
-  const skills: OpenCodeSkill[] = [];
-
-  if (existsSync(bundledAgentsDir)) {
-    for (const file of readdirSync(bundledAgentsDir)) {
-      if (file.endsWith(".md")) {
-        const content = readFileSync(join(bundledAgentsDir, file), "utf-8");
-        const { frontmatter, body } = parseFrontmatter(content);
-        agents.push({
-          filename: file,
-          frontmatter: {
-            description: frontmatter.description || "",
-            mode: frontmatter.mode as "subagent" | undefined,
-            model: frontmatter.model || undefined,
-            tools: frontmatter.tools,
-            workflows: frontmatter.workflows || extractWorkflowsFromBody(body),
-            permittedSkills: extractPermittedSkills(content),
-          },
-          prompt: body,
-        });
-      }
+function resolveAgentPrompt(def: Record<string, any>, name: string): { prompt: string; promptRef?: string } {
+  const raw = def.prompt || "";
+  const fileMatch = raw.match(/^\{file:(.+)\}$/);
+  if (fileMatch) {
+    const relPath = fileMatch[1];
+    const absPath = join(packageRoot, relPath);
+    if (existsSync(absPath)) {
+      const content = readFileSync(absPath, "utf-8");
+      const { body } = parseFrontmatter(content);
+      return { prompt: body, promptRef: raw };
     }
   }
+  return { prompt: raw };
+}
+
+function readAgentsFromJson(): OpenCodeAgent[] {
+  if (!existsSync(bundledAgentsJson)) return [];
+
+  try {
+    const data = JSON.parse(readFileSync(bundledAgentsJson, "utf-8")) as Record<string, any>;
+    return Object.entries(data).map(([name, def]) => {
+      const { prompt, promptRef } = resolveAgentPrompt(def, name);
+      return {
+        filename: `${name}.md`,
+        frontmatter: {
+          description: def.description || "",
+          mode: def.mode as OpenCodeAgent["frontmatter"]["mode"],
+          model: def.model || undefined,
+          temperature: def.temperature,
+          top_p: def.top_p,
+          color: def.color,
+          hidden: def.hidden,
+          tools: def.tools,
+          permission: def.permission,
+          workflows: def.workflows || [],
+          permittedSkills: def.permittedSkills || [],
+        },
+        prompt,
+        promptRef,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+function readAgentsFromMarkdown(): OpenCodeAgent[] {
+  const agents: OpenCodeAgent[] = [];
+  if (!existsSync(bundledAgentsDir)) return agents;
+
+  for (const file of readdirSync(bundledAgentsDir)) {
+    if (!file.endsWith(".md")) continue;
+    const content = readFileSync(join(bundledAgentsDir, file), "utf-8");
+    const { frontmatter, body } = parseFrontmatter(content);
+    agents.push({
+      filename: file,
+      frontmatter: {
+        description: frontmatter.description || "",
+        mode: frontmatter.mode as OpenCodeAgent["frontmatter"]["mode"],
+        model: frontmatter.model || undefined,
+        temperature: frontmatter.temperature ? parseFloat(frontmatter.temperature) : undefined,
+        top_p: frontmatter.top_p ? parseFloat(frontmatter.top_p) : undefined,
+        color: frontmatter.color,
+        hidden: frontmatter.hidden,
+        tools: frontmatter.tools,
+        permission: frontmatter.permission,
+        workflows: frontmatter.workflows || extractWorkflowsFromBody(body),
+        permittedSkills: extractPermittedSkills(content),
+      },
+      prompt: body,
+    });
+  }
+  return agents;
+}
+
+function readBundledFiles(): { agents: OpenCodeAgent[]; skills: OpenCodeSkill[] } {
+  const agents = readAgentsFromJson();
+  const fallbackAgents = agents.length > 0 ? agents : readAgentsFromMarkdown();
+  const skills: OpenCodeSkill[] = [];
 
   if (existsSync(bundledSkillsDir)) {
     for (const dir of readdirSync(bundledSkillsDir)) {
@@ -232,7 +294,7 @@ function readBundledFiles(): { agents: OpenCodeAgent[]; skills: OpenCodeSkill[] 
     }
   }
 
-  return { agents, skills };
+  return { agents: fallbackAgents, skills };
 }
 
 function parseFrontmatter(content: string): { frontmatter: Record<string, any>; body: string } {
@@ -423,24 +485,42 @@ function writeAgentFile(targetDir: string, agent: OpenCodeAgent): void {
   const agentDir = join(targetDir, "agents");
   mkdirSync(agentDir, { recursive: true });
 
+  const fm = agent.frontmatter;
   const frontmatterLines = ["---"];
-  frontmatterLines.push(`description: ${JSON.stringify(agent.frontmatter.description)}`);
-  if (agent.frontmatter.mode) frontmatterLines.push(`mode: ${agent.frontmatter.mode}`);
-  if (agent.frontmatter.model) frontmatterLines.push(`model: ${JSON.stringify(agent.frontmatter.model)}`);
-  if (agent.frontmatter.tools) {
+  frontmatterLines.push(`description: ${JSON.stringify(fm.description)}`);
+  if (fm.mode) frontmatterLines.push(`mode: ${fm.mode}`);
+  if (fm.model) frontmatterLines.push(`model: ${JSON.stringify(fm.model)}`);
+  if (fm.temperature !== undefined) frontmatterLines.push(`temperature: ${fm.temperature}`);
+  if (fm.top_p !== undefined) frontmatterLines.push(`top_p: ${fm.top_p}`);
+  if (fm.color) frontmatterLines.push(`color: ${JSON.stringify(fm.color)}`);
+  if (fm.hidden !== undefined) frontmatterLines.push(`hidden: ${fm.hidden}`);
+  if (fm.tools) {
     frontmatterLines.push("tools:");
-    for (const [toolName, enabled] of Object.entries(agent.frontmatter.tools)) {
+    for (const [toolName, enabled] of Object.entries(fm.tools)) {
       if (enabled !== undefined) frontmatterLines.push(`  ${toolName}: ${enabled}`);
+    }
+  }
+  if (fm.permission) {
+    frontmatterLines.push("permission:");
+    for (const [key, val] of Object.entries(fm.permission)) {
+      if (typeof val === "string") {
+        frontmatterLines.push(`  ${key}: ${val}`);
+      } else if (typeof val === "object" && val !== null) {
+        frontmatterLines.push(`  ${key}:`);
+        for (const [k, v] of Object.entries(val as Record<string, string>)) {
+          frontmatterLines.push(`    "${k}": ${v}`);
+        }
+      }
     }
   }
   frontmatterLines.push("---");
 
   let promptContent = agent.prompt;
-  
-  if (agent.frontmatter.workflows && agent.frontmatter.workflows.length > 0) {
+
+  if (fm.workflows && fm.workflows.length > 0) {
     const workflows = readWorkflows();
-    const workflowSection = buildWorkflowSection(agent.frontmatter.workflows, workflows);
-    
+    const workflowSection = buildWorkflowSection(fm.workflows, workflows);
+
     if (!promptContent.includes("You have access to the following workflows")) {
       promptContent = promptContent.trim() + "\n\n" + workflowSection;
     }
@@ -536,6 +616,17 @@ function syncSetModelCommands(directory: string): void {
       }
     }
   }
+}
+
+function updateModelInAgentsJson(jsonPath: string, agentName: string, newModel: string): void {
+  if (!existsSync(jsonPath)) return;
+  try {
+    const data = JSON.parse(readFileSync(jsonPath, "utf-8"));
+    if (data[agentName]) {
+      data[agentName].model = newModel;
+      writeFileSync(jsonPath, JSON.stringify(data, null, 2) + "\n");
+    }
+  } catch { /* skip */ }
 }
 
 function updateModelInFrontmatter(content: string, newModel: string): string {
@@ -699,10 +790,14 @@ export const BMMPlugin: Plugin = async ({ directory, client }) => {
         if (config.agent[name]) continue;
         const entry: Record<string, any> = {
           description: agent.frontmatter.description,
-          prompt: buildAgentPrompt(agent),
+          prompt: agent.promptRef || buildAgentPrompt(agent),
         };
         if (agent.frontmatter.mode) entry.mode = agent.frontmatter.mode;
         if (agent.frontmatter.model) entry.model = agent.frontmatter.model;
+        if (agent.frontmatter.temperature !== undefined) entry.temperature = agent.frontmatter.temperature;
+        if (agent.frontmatter.top_p !== undefined) entry.top_p = agent.frontmatter.top_p;
+        if (agent.frontmatter.color) entry.color = agent.frontmatter.color;
+        if (agent.frontmatter.hidden !== undefined) entry.hidden = agent.frontmatter.hidden;
         if (agent.frontmatter.tools) {
           const tools: Record<string, boolean> = {};
           for (const [k, v] of Object.entries(agent.frontmatter.tools)) {
@@ -710,6 +805,7 @@ export const BMMPlugin: Plugin = async ({ directory, client }) => {
           }
           entry.tools = tools;
         }
+        if (agent.frontmatter.permission) entry.permission = agent.frontmatter.permission;
         config.agent[name] = entry;
       }
 
@@ -805,6 +901,7 @@ export const BMMPlugin: Plugin = async ({ directory, client }) => {
             const modelId = knownModel ? knownModel.id : modelSlug.replace(/-/, "/");
             const currentModel = agent.frontmatter.model || "(default)";
 
+            updateModelInAgentsJson(bundledAgentsJson, matchedAgent, modelId);
             for (const loc of [
               join(bundledAgentsDir, agent.filename),
               join(homedir(), ".config", "opencode", "agents", agent.filename),
@@ -1211,7 +1308,8 @@ Agents and commands are also injected via config hook (auto-removed when plugin 
             const agentName = agent.filename.replace(".md", "");
             const oldModel = agent.frontmatter.model || "(default)";
 
-            // 1. Update bundled agent file
+            updateModelInAgentsJson(bundledAgentsJson, agentName, model);
+
             const bundledPath = join(bundledAgentsDir, agent.filename);
             if (existsSync(bundledPath)) {
               const content = readFileSync(bundledPath, "utf-8");
