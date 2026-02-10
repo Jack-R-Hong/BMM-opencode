@@ -126,10 +126,12 @@ function removeManifestFiles(targetDir: string): number {
       if (existsSync(parent) && readdirSync(parent).length === 0) rmdirSync(parent);
     } catch { /* skip */ }
   }
-  try {
-    const skillsDir = join(targetDir, "skills");
-    if (existsSync(skillsDir) && readdirSync(skillsDir).length === 0) rmdirSync(skillsDir);
-  } catch { /* not empty */ }
+  for (const subdir of ["skills", "agents", "commands"]) {
+    try {
+      const dir = join(targetDir, subdir);
+      if (existsSync(dir) && readdirSync(dir).length === 0) rmdirSync(dir);
+    } catch { /* not empty */ }
+  }
   try { unlinkSync(join(targetDir, MANIFEST_FILENAME)); } catch { /* skip */ }
   return removed;
 }
@@ -481,7 +483,7 @@ function getAgentWorkflowMappings(): AgentWorkflowMapping[] {
   }).filter(mapping => mapping.workflows.length > 0);
 }
 
-function writeAgentFile(targetDir: string, agent: OpenCodeAgent): void {
+function writeAgentFile(targetDir: string, agent: OpenCodeAgent): string {
   const agentDir = join(targetDir, "agents");
   mkdirSync(agentDir, { recursive: true });
 
@@ -528,6 +530,7 @@ function writeAgentFile(targetDir: string, agent: OpenCodeAgent): void {
 
   const content = frontmatterLines.join("\n") + "\n\n" + promptContent;
   writeFileSync(join(agentDir, agent.filename), content);
+  return join("agents", agent.filename);
 }
 
 function writeSkillFile(targetDir: string, skill: OpenCodeSkill): void {
@@ -582,40 +585,6 @@ function formatAgentContent(agent: OpenCodeAgent, injectWorkflows: boolean = tru
   }
   
   return frontmatterLines.join("\n") + "\n\n" + promptContent;
-}
-
-function syncSetModelCommands(directory: string): void {
-  const { agents } = readBundledFiles();
-  const commandDirs = [
-    join(bundledAgentsDir, "..", "commands"),
-    join(homedir(), ".config", "opencode", "commands"),
-    join(directory, ".opencode", "commands"),
-  ];
-
-  for (const cmdDir of commandDirs) {
-    if (!existsSync(cmdDir)) continue;
-
-    // Main command
-    writeFileSync(join(cmdDir, "bmad-bmm-set-model.md"),
-      `---\ndescription: "View all agent model assignments"\n---\n\n.\n`);
-
-    for (const agent of agents) {
-      const name = agent.filename.replace(".md", "");
-      const current = agent.frontmatter.model || "default";
-
-      // Per-agent command
-      writeFileSync(join(cmdDir, `bmad-bmm-set-model-${name}.md`),
-        `---\ndescription: "${name} -> ${current}"\n---\n\n.\n`);
-
-      // Per-agent-model commands
-      for (const m of KNOWN_MODELS) {
-        const modelSlug = m.id.replace(/\//g, "-");
-        const isCurrent = m.id === current;
-        writeFileSync(join(cmdDir, `bmad-bmm-set-model-${name}-${modelSlug}.md`),
-          `---\ndescription: "${name} -> ${m.id}${isCurrent ? " (current)" : ""}"\n---\n\n.\n`);
-      }
-    }
-  }
 }
 
 function updateModelInAgentsJson(jsonPath: string, agentName: string, newModel: string): void {
@@ -739,7 +708,7 @@ function getCommandMappings(): CommandMapping[] {
   return mappings;
 }
 
-function writeCommandFile(targetDir: string, mapping: CommandMapping): void {
+function writeCommandFile(targetDir: string, mapping: CommandMapping): string {
   const commandsDir = join(targetDir, "commands");
   mkdirSync(commandsDir, { recursive: true });
 
@@ -756,7 +725,9 @@ function writeCommandFile(targetDir: string, mapping: CommandMapping): void {
     : `Load the skill "${mapping.skillName}" and follow its instructions. $ARGUMENTS`;
 
   const content = frontmatterLines.join("\n") + "\n\n" + prompt + "\n";
-  writeFileSync(join(commandsDir, `${mapping.commandName}.md`), content);
+  const relPath = join("commands", `${mapping.commandName}.md`);
+  writeFileSync(join(targetDir, relPath), content);
+  return relPath;
 }
 
 function formatSkillContent(skill: OpenCodeSkill): string {
@@ -823,112 +794,12 @@ export const BMMPlugin: Plugin = async ({ directory, client }) => {
         config.command[cmd.commandName] = entry;
       }
 
-      // Register set-model commands: main + per-agent + per-agent-model
-      const freshAgents = readBundledFiles().agents;
       if (!config.command["bmad-bmm-set-model"]) {
         config.command["bmad-bmm-set-model"] = {
-          description: "View all agent model assignments",
-          template: ".",
+          description: "View or change agent model assignments",
+          template: 'Load the skill "bmad-bmm-set-model" and follow its instructions. $ARGUMENTS',
         };
       }
-      for (const a of freshAgents) {
-        const name = a.filename.replace(".md", "");
-        const current = a.frontmatter.model || "default";
-        // Per-agent command
-        const agentCmd = `bmad-bmm-set-model-${name}`;
-        if (!config.command[agentCmd]) {
-          config.command[agentCmd] = {
-            description: `${name} -> ${current}`,
-            template: ".",
-          };
-        }
-        // Per-agent-model commands
-        for (const m of KNOWN_MODELS) {
-          const modelSlug = m.id.replace(/\//g, "-");
-          const modelCmd = `bmad-bmm-set-model-${name}-${modelSlug}`;
-          if (!config.command[modelCmd]) {
-            const isCurrent = m.id === current;
-            config.command[modelCmd] = {
-              description: `${name} -> ${m.id}${isCurrent ? " (current)" : ""}`,
-              template: ".",
-            };
-          }
-        }
-      }
-    },
-
-    "command.execute.before": async (input) => {
-      const SET_MODEL_PREFIX = "bmad-bmm-set-model";
-      if (!input.command.startsWith(SET_MODEL_PREFIX)) return;
-
-      // ALL set-model commands are handled here. Throw at the end to block LLM.
-      const sessionID = input.sessionID;
-      const suffix = input.command.length > SET_MODEL_PREFIX.length
-        ? input.command.slice(SET_MODEL_PREFIX.length + 1)
-        : "";
-
-      let result = "";
-
-      try {
-        const allAgents = readBundledFiles().agents;
-        const agentNames = allAgents.map((a) => a.filename.replace(".md", ""));
-
-        // Match agent name from suffix (longest first)
-        let matchedAgent = "";
-        let modelSlug = "";
-        if (suffix) {
-          const sorted = [...agentNames].sort((a, b) => b.length - a.length);
-          for (const name of sorted) {
-            if (suffix === name) { matchedAgent = name; break; }
-            if (suffix.startsWith(name + "-")) { matchedAgent = name; modelSlug = suffix.slice(name.length + 1); break; }
-          }
-        }
-
-        if (!suffix) {
-          // Level 1: show all agents
-          result = allAgents.map((a) => `${a.filename.replace(".md", "")}: ${a.frontmatter.model || "(default)"}`).join("\n");
-
-        } else if (matchedAgent && !modelSlug) {
-          // Level 2: show agent's model
-          const agent = allAgents.find((a) => a.filename.replace(".md", "") === matchedAgent);
-          result = `${matchedAgent}: ${agent?.frontmatter.model || "(default)"}`;
-
-        } else if (matchedAgent && modelSlug) {
-          // Level 3: apply model change
-          const agent = allAgents.find((a) => a.filename.replace(".md", "") === matchedAgent);
-          if (agent) {
-            const knownModel = KNOWN_MODELS.find((m) => m.id.replace(/\//g, "-") === modelSlug);
-            const modelId = knownModel ? knownModel.id : modelSlug.replace(/-/, "/");
-            const currentModel = agent.frontmatter.model || "(default)";
-
-            updateModelInAgentsJson(bundledAgentsJson, matchedAgent, modelId);
-            for (const loc of [
-              join(bundledAgentsDir, agent.filename),
-              join(homedir(), ".config", "opencode", "agents", agent.filename),
-              join(directory, ".opencode", "agents", agent.filename),
-            ]) {
-              if (existsSync(loc)) {
-                writeFileSync(loc, updateModelInFrontmatter(readFileSync(loc, "utf-8"), modelId));
-              }
-            }
-            syncSetModelCommands(directory);
-            result = `${matchedAgent}: ${currentModel} -> ${modelId}`;
-          }
-        }
-
-        // Show result in chat (noReply = no LLM response)
-        if (result) {
-          await client.session.prompt({
-            path: { id: sessionID },
-            body: { noReply: true, parts: [{ type: "text", text: result }] },
-          });
-        }
-      } catch {
-        // Ensure throw always happens even if something above fails
-      }
-
-      // ALWAYS throw to prevent LLM from running
-      throw new Error("set-model");
     },
 
     tool: {
@@ -1111,30 +982,28 @@ Use \`force=true\` to overwrite, or remove existing files first.`;
 
             const { agents, skills } = readBundledFiles();
 
+            const installedFiles: string[] = [];
+
             let agentsCopied = 0;
             for (const agent of agents) {
-              writeAgentFile(targetBase, agent);
+              installedFiles.push(writeAgentFile(targetBase, agent));
               agentsCopied++;
             }
 
-            const skillFiles: string[] = [];
             let skillsCopied = 0;
             for (const skill of skills) {
-              skillFiles.push(writeSkillFileTracked(targetBase, skill));
+              installedFiles.push(writeSkillFileTracked(targetBase, skill));
               skillsCopied++;
             }
 
             const commandMappings = getCommandMappings();
             let commandsCopied = 0;
             for (const mapping of commandMappings) {
-              writeCommandFile(targetBase, mapping);
+              installedFiles.push(writeCommandFile(targetBase, mapping));
               commandsCopied++;
             }
 
-            // Write set-model commands (main + per-agent)
-            syncSetModelCommands(context.directory);
-
-            writeManifest(targetBase, { version: getPackageVersion(), installedFiles: skillFiles });
+            writeManifest(targetBase, { version: getPackageVersion(), installedFiles });
 
             const isGlobal = targetBase === globalConfigDir;
             const installType = isGlobal ? "globally" : "to project";
@@ -1147,7 +1016,7 @@ Use \`force=true\` to overwrite, or remove existing files first.`;
 - ${commandsCopied} commands copied to ${targetCommands}
 - Manifest: ${join(targetBase, MANIFEST_FILENAME)}
 ${autoNote}
-Use \`bmm_uninstall\` to cleanly remove skill files.
+Use \`bmm_uninstall\` to cleanly remove all installed files.
 Agents and commands are also injected via config hook (auto-removed when plugin is removed).`;
           } catch (error) {
             return `Installation failed: ${error instanceof Error ? error.message : String(error)}`;
@@ -1157,7 +1026,7 @@ Agents and commands are also injected via config hook (auto-removed when plugin 
 
       bmm_uninstall: tool({
         description:
-          "Remove all BMM skill files that were auto-installed. Reads bmm-opencode.json manifest for clean removal.",
+          "Remove all BMM files (agents, skills, commands) that were installed. Reads bmm-opencode.json manifest for clean removal.",
         args: {
           target: tool.schema
             .string()
@@ -1185,10 +1054,10 @@ Agents and commands are also injected via config hook (auto-removed when plugin 
             const manifest = readManifest(target);
             if (!manifest) continue;
             const removed = removeManifestFiles(target);
-            results.push(`- ${target}: removed ${removed} skill files (was v${manifest.version})`);
+            results.push(`- ${target}: removed ${removed} files (was v${manifest.version})`);
           }
 
-          return `BMM-OpenCode skill files uninstalled:\n${results.join("\n")}\n\nAgents and commands are injected via config hook — they disappear automatically when "bmm-opencode" is removed from opencode.json plugin list.`;
+          return `BMM-OpenCode uninstalled:\n${results.join("\n")}\n\nAgents and commands are also injected via config hook — they fully disappear when "bmm-opencode" is removed from opencode.json plugin list.`;
         },
       }),
 
@@ -1344,9 +1213,6 @@ Agents and commands are also injected via config hook (auto-removed when plugin 
               `- ${agentName}: ${oldModel} → ${model}`
             );
           }
-
-          // Sync command .md files so they reflect updated models
-          syncSetModelCommands(context.directory);
 
           return `# Model Updated\n\n${results.join("\n")}\n\nChanges take effect on next agent invocation.`;
         },
